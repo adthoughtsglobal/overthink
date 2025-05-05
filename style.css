@@ -299,3 +299,40 @@ kbd {
     right: 7%;
     left: auto;
 }
+
+div#timepicker {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 10;
+    display: flex
+;
+width: 100%;
+height: 100%;
+    align-items: center;
+    justify-content: center;
+    background-color: #00000063;
+}
+
+.form {
+     display: flex;
+     flex-direction: column;
+    background: white;
+    padding: 1em;
+    border: 1px solid grey;
+    border-radius: .5em;
+    box-shadow: 0 3px 10px #00000063;
+}
+
+input[type="time"] {
+    margin-bottom: 15px;
+    font-size: 2em;
+}
+
+.inpgrp {
+    display: flex;
+    flex-direction: column;
+}
+
+.inpgrp label {
+}

@@ -52,9 +52,28 @@
 
             </div>
             <div class="clock sidepanels panel">
+                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdtimepicker/mdtimepicker.min.css">
+                <script src="https://cdn.jsdelivr.net/npm/mdtimepicker/mdtimepicker.min.js"></script>
+
             </div>
         </div>
     </div>
+    <div id="timepicker">
+        <div class="form">
+            <div class="inpgrp">
+            <label for="startTime">From: </label>
+            <input type="time" id="startTime">
+            <label for="endTime">To: </label>
+            <input type="time" id="endTime">
+            </div>
+            <div class="btnrl" id="timesubbtn">
+                <div class="btntxt">
+                    Use this time
+                </div><i class="msr btn">check</i>
+            </div>
+        </div>
+    </div>
+
     <script src="script.js" async defer></script>
 </body>
 

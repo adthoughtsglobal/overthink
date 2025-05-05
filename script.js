@@ -138,7 +138,7 @@ function createCard({ title = "Give a title...", body = "What would be happening
         noteTitleInput.blur();
         noteTextarea.blur();
         glow(singularNote);
-    });    
+    });
 
     buttonContainer.appendChild(saveButton);
     buttonContainer.appendChild(discardButton);
@@ -175,11 +175,70 @@ document.addEventListener("keyup", (event) => {
 function isNotFocusedOnInput() {
     const active = document.activeElement;
     return !(
-      active && (
-        active.tagName === 'INPUT' ||
-        active.tagName === 'TEXTAREA' ||
-        active.isContentEditable
-      )
+        active && (
+            active.tagName === 'INPUT' ||
+            active.tagName === 'TEXTAREA' ||
+            active.isContentEditable
+        )
     );
-  }
-  
+}
+async function askTimes() {
+    return new Promise((resolve, reject) => {
+        const startTimeInput = document.getElementById('startTime');
+        const endTimeInput = document.getElementById('endTime');
+        const checkButton = document.querySelector('#timesubbtn');
+
+        function formatAMPM(date) {
+            let hours = date.getHours();
+            let minutes = date.getMinutes();
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            minutes = minutes < 10 ? '0' + minutes : minutes;
+            return `${hours}:${minutes} ${ampm}`;
+        }
+
+        function isValidTimeDifference(start, end) {
+            const today = new Date().toISOString().split('T')[0];
+            let startDate = new Date(`${today}T${start}`);
+            let endDate = new Date(`${today}T${end}`);
+
+            if (endDate <= startDate) {
+                endDate.setDate(endDate.getDate() + 1);
+            }
+
+            const diffInMs = endDate - startDate;
+            const diffInMinutes = diffInMs / 60000;
+
+            return diffInMinutes >= 1 && diffInMinutes <= 70 * 365 * 24 * 60;
+        }
+
+        checkButton.addEventListener('click', () => {
+            const start = startTimeInput.value;
+            const end = endTimeInput.value;
+
+            if (start && end) {
+                const today = new Date().toISOString().split('T')[0];
+                let startDate = new Date(`${today}T${start}`);
+                let endDate = new Date(`${today}T${end}`);
+
+                if (endDate <= startDate) {
+                    endDate.setDate(endDate.getDate() + 1);
+                }
+
+                if (isValidTimeDifference(start, end)) {
+                    resolve({
+                        startTime: formatAMPM(startDate),
+                        endTime: formatAMPM(endDate),
+                        startTimestamp: startDate.getTime(),
+                        endTimestamp: endDate.getTime()
+                    });
+                } else {
+                    alert('Please enter valid times.');
+                }
+            } else {
+                alert('Please enter valid times.');
+            }
+        });
+    });
+}
