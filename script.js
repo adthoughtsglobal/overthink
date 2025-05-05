@@ -1,6 +1,6 @@
 const notesArray = [];
 
-function createCard({ title = "Give a title...", body = "What would be happening by then? A brief summary would fit just right." } = {}) {
+function createCard({ title = "Give a title...", body = "Hit Enter once you're done with the title. And how would this even look like? At least ideally..." } = {}) {
     const noteData = { title, body };
     notesArray.push(noteData);
 
@@ -39,8 +39,8 @@ function createCard({ title = "Give a title...", body = "What would be happening
     const time = document.createElement("div");
     time.className = "btn time_btn";
     time.innerText = "09:00 - 09:30 AM";
-    time.addEventListener("click", () => {
-
+    time.addEventListener("click", async () => {
+        time.innerText = (await askTimes()).timeRangeString;
     });
 
     noteOptions.appendChild(time);
@@ -183,9 +183,24 @@ function isNotFocusedOnInput() {
     );
 }
 async function askTimes() {
+    const picker = document.querySelector('#timepicker');
+    picker.style.display = "flex";
     return new Promise((resolve, reject) => {
         const startTimeInput = document.getElementById('startTime');
         const endTimeInput = document.getElementById('endTime');
+
+        function pad(num) {
+            return num.toString().padStart(2, '0');
+        }
+
+        const now = new Date();
+        const nowPlus5 = new Date(now.getTime() + 5 * 60000);
+
+        const formatTime = (date) => `${pad(date.getHours())}:${pad(date.getMinutes())}`;
+
+        startTimeInput.value = formatTime(now);
+        endTimeInput.value = formatTime(nowPlus5);
+
         const checkButton = document.querySelector('#timesubbtn');
 
         function formatAMPM(date) {
@@ -214,6 +229,7 @@ async function askTimes() {
         }
 
         checkButton.addEventListener('click', () => {
+            picker.style.display = "none";
             const start = startTimeInput.value;
             const end = endTimeInput.value;
 
@@ -227,18 +243,40 @@ async function askTimes() {
                 }
 
                 if (isValidTimeDifference(start, end)) {
+                    const rangeString = buildTimeRangeString(startDate, endDate);
                     resolve({
                         startTime: formatAMPM(startDate),
                         endTime: formatAMPM(endDate),
                         startTimestamp: startDate.getTime(),
-                        endTimestamp: endDate.getTime()
+                        endTimestamp: endDate.getTime(),
+                        timeRangeString: rangeString
                     });
                 } else {
-                    alert('Please enter valid times.');
+                    askTimes();
                 }
             } else {
-                alert('Please enter valid times.');
+                askTimes();
             }
         });
     });
+}
+
+function buildTimeRangeString(startDate, endDate) {
+    function formatTime(date) {
+        let hours = date.getHours();
+        let minutes = date.getMinutes();
+        const ampm = hours >= 12 ? 'PM' : 'AM';
+        hours = hours % 12 || 12;
+        const paddedMinutes = minutes.toString().padStart(2, '0');
+        return { time: `${hours}:${paddedMinutes}`, ampm };
+    }
+
+    const start = formatTime(startDate);
+    const end = formatTime(endDate);
+
+    if (start.ampm === end.ampm) {
+        return `${start.time} - ${end.time} ${end.ampm}`;
+    } else {
+        return `${start.time} ${start.ampm} - ${end.time} ${end.ampm}`;
+    }
 }
