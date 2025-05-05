@@ -1,0 +1,201 @@
+@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;800&display=swap&family=IBM+Plex+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&display=swap');
+
+@font-face {
+    font-family: 'Material Symbols Rounded';
+    font-style: normal;
+    src: url("fonts//MaterialSymbolsRounded.woff2") format('woff2');
+}
+
+.msr {
+    font-family: 'Material Symbols Rounded';
+    font-weight: normal;
+    font-style: normal;
+    font-size: 24px;
+    line-height: 1;
+    display: inline-block;
+    white-space: nowrap;
+    direction: ltr;
+    -webkit-font-smoothing: antialiased;
+}
+
+html {
+    height: 100vh;
+}
+
+body {
+	font-family: "IBM Plex Sans", sans-serif;
+    margin: 0;
+    height: 100vh;
+    background-color: grey;
+    gap: 2px;
+}
+
+.project {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.nav {
+    padding: .3em;
+    background-color: rgb(230, 230, 230);
+    z-index: 3;
+}
+
+.editor {
+    display: flex;
+    flex-direction: row;
+    height: 100%;
+}
+
+h1 {
+	font-family: 'Poppins', sans-serif;
+}
+
+.panel {
+    flex-direction: column;
+    background-color: rgb(230, 230, 230);
+    display: flex;
+    gap: 3px;
+    flex: 1;
+    padding: .5em;
+}
+
+.sidepanels {
+    max-width: 200px;
+    box-shadow: 0 5px 10px black;
+    z-index: 2;
+}
+
+.singular_note {
+    flex-direction: column;
+    background-color: rgb(255, 255, 255);
+}
+
+.notes {
+    display: flex;
+    flex-direction: column;
+    padding: 1em;
+    align-items: center;
+    z-index: 1;
+}
+
+.note_nav {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    gap: 1em;
+}
+
+.note_nav > h1 {
+    margin-top: .3em;
+    margin-bottom: 5px;
+    flex: 1;
+}
+
+.singular_note {
+    flex-direction: column;
+    display: flex
+;
+    border: 1px solid rgb(145, 145, 145);
+    border-radius: .5em;
+    padding: 1em;
+    transition: .2s;
+    width: 500px;
+}
+
+.singular_note:hover {
+    box-shadow: 0 3px 10px #00000063;
+}
+
+.time_block, .btnrl {
+    display: flex
+;
+    flex-direction: row;
+    padding: 5px;
+    border: 1px solid rgb(145, 145, 145);
+    background-color: rgb(255, 255, 255);
+    border-radius: .5em;
+    height: fit-content;
+    white-space: nowrap;
+    overflow: hidden;
+    transition: .2s;
+    align-items: center;
+    gap: 7px;
+    padding-left: .7em;
+    justify-content: space-between;
+}
+
+.btn {
+    display: flex
+;
+    padding: .2em;
+    cursor: pointer;
+    border-radius: 7px;
+    border: 1px solid rgba(172, 172, 172, 0.507);
+    align-items: center;
+    justify-content: center;
+    transition: .2s;
+}
+
+.btn:hover {
+    background-color: rgba(152, 152, 152, 0.403);
+}
+
+.btn:active {
+    background-color: rgba(153, 153, 153, 0.544);
+}
+
+.btn.msr {
+    opacity: .8;
+    font-size: 1.3em;
+}
+
+.time_block_text {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.btnrl {
+    color: white;
+    background-color: #8161ff;
+    cursor: pointer;
+}
+
+[contenteditable="true"]:focus {
+    border-bottom: 2px solid #8161ff;
+    background-color: #efefef;
+    outline: 0;
+    padding: .3em;
+}
+
+.greybtn {
+    background-color: rgb(211, 211, 211);
+    color: rgb(51, 51, 51);
+}
+
+.button-container {
+    overflow: hidden;
+    height: 0;
+    opacity: 0;
+    transition: opacity 200ms ease, height 200ms ease;
+    display: flex;
+    gap: 6px;
+    margin-top: 8px;
+}
+
+.button-container.visible {
+    opacity: 1;
+    height: 40px;
+}
+
+.glow {
+    animation: 1s glow;
+}
+@keyframes glow {
+    25% {
+        background-color: #d6cbff;
+    }
+}
