@@ -1,6 +1,6 @@
 const notesArray = [];
 
-function createCard({ title = "", body = "Editable note content." } = {}) {
+function createCard({ title = "Give a title...", body = "What would be happening by then? A brief summary would fit just right." } = {}) {
     const noteData = { title, body };
     notesArray.push(noteData);
 
@@ -12,15 +12,23 @@ function createCard({ title = "", body = "Editable note content." } = {}) {
     const noteNav = document.createElement("div");
     noteNav.className = "note_nav";
 
-    const noteTitle = document.createElement("h1");
-    noteTitle.className = "note_title";
-    noteTitle.contentEditable = "true";
-    noteTitle.innerText = noteData.title;
+    const noteTitleInput = document.createElement("input");
+    noteTitleInput.className = "note_title";
+    noteTitleInput.type = "text";
+    noteTitleInput.setAttribute("placeholder", noteData.title);
 
     const noteOptions = document.createElement("div");
-    noteOptions.className = "note_options msr btn";
-    noteOptions.innerText = "delete";
-    noteOptions.addEventListener("click", () => {
+    noteOptions.className = "note_options";
+
+    const delbtn = document.createElement("div");
+    delbtn.className = " btn toolticont";
+    delbtn.innerHTML = `<div class="tooltip">
+                        <div class="tooltitit">Delete</div>
+                        <kbd>CTRL</kbd> + <kbd>D</kbd>
+                    </div><i class="msr">delete</i>
+    
+    `;
+    delbtn.addEventListener("click", () => {
         const index = notesArray.indexOf(noteData);
         if (index !== -1) {
             notesArray.splice(index, 1);
@@ -28,16 +36,41 @@ function createCard({ title = "", body = "Editable note content." } = {}) {
         singularNote.remove();
     });
 
-    const notePara = document.createElement("div");
-    notePara.className = "note_para";
-    notePara.contentEditable = "true";
-    notePara.innerText = noteData.body;
+    const time = document.createElement("div");
+    time.className = "btn time_btn";
+    time.innerText = "09:00 - 09:30 AM";
+    time.addEventListener("click", () => {
+
+    });
+
+    noteOptions.appendChild(time);
+    noteOptions.appendChild(delbtn);
+
+    const noteTextarea = document.createElement("textarea");
+    noteTextarea.className = "note_para";
+    noteTextarea.setAttribute("placeholder", noteData.body);
+
+    const resizeTextarea = () => {
+        noteTextarea.style.height = "auto";
+        noteTextarea.style.height = noteTextarea.scrollHeight + "px";
+    };
+
+    noteTextarea.addEventListener("input", () => {
+        resizeTextarea();
+        showButtonsIfChanged();
+    });
+
+    resizeTextarea();
 
     const buttonContainer = document.createElement("div");
     buttonContainer.className = "button-container";
 
     const saveButton = document.createElement("button");
-    saveButton.innerHTML = `Save <i class="msr btn">check</i>`;
+    saveButton.innerHTML = `<div class="tooltip">
+                        <div class="tooltitit">Save task</div>
+                        <kbd>ENTER</kbd> </div><span>Save </span>  <i class="msr btn">check</i>
+    `;
+    saveButton.classList.add("toolticont");
     saveButton.classList.add("btnrl");
 
     const discardButton = document.createElement("button");
@@ -45,8 +78,8 @@ function createCard({ title = "", body = "Editable note content." } = {}) {
     discardButton.classList.add("btnrl", "greybtn");
 
     saveButton.addEventListener("click", () => {
-        noteData.title = noteTitle.innerText;
-        noteData.body = notePara.innerText;
+        noteData.title = noteTitleInput.value;
+        noteData.body = noteTextarea.value;
         originalData.title = noteData.title;
         originalData.body = noteData.body;
         buttonContainer.classList.remove("visible");
@@ -54,50 +87,70 @@ function createCard({ title = "", body = "Editable note content." } = {}) {
     });
 
     discardButton.addEventListener("click", () => {
-        noteTitle.innerText = originalData.title;
-        notePara.innerText = originalData.body;
+        noteTitleInput.value = originalData.title;
+        noteTextarea.value = originalData.body;
         buttonContainer.classList.remove("visible");
         glow(singularNote);
     });
 
     const showButtonsIfChanged = () => {
-        const titleChanged = noteTitle.innerText !== originalData.title;
-        const bodyChanged = notePara.innerText !== originalData.body;
-        if (titleChanged || bodyChanged) {
+        const titleChanged = noteTitleInput.value !== originalData.title;
+        const bodyChanged = noteTextarea.value !== originalData.body;
+        const titleFocused = document.activeElement === noteTitleInput;
+        const bodyFocused = document.activeElement === noteTextarea;
+
+        if ((titleChanged || bodyChanged) && (titleFocused || bodyFocused)) {
             buttonContainer.classList.add("visible");
         } else {
             buttonContainer.classList.remove("visible");
         }
     };
 
-    noteTitle.addEventListener("input", showButtonsIfChanged);
-    notePara.addEventListener("input", showButtonsIfChanged);
 
-    noteTitle.addEventListener("keydown", (e) => {
+    noteTitleInput.addEventListener("input", showButtonsIfChanged);
+    noteTextarea.addEventListener("input", showButtonsIfChanged);
+
+    noteTitleInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
-            notePara.focus();
+            noteTextarea.focus();
         }
     });
 
-    notePara.addEventListener("keydown", (e) => {
-        if (e.key === "Enter") {
+    noteTextarea.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             saveButton.click();
         }
     });
 
+    noteTitleInput.addEventListener("focus", showButtonsIfChanged);
+    noteTitleInput.addEventListener("blur", showButtonsIfChanged);
+    noteTextarea.addEventListener("focus", showButtonsIfChanged);
+    noteTextarea.addEventListener("blur", showButtonsIfChanged);
+
+    saveButton.addEventListener("click", () => {
+        noteData.title = noteTitleInput.value;
+        noteData.body = noteTextarea.value;
+        originalData.title = noteData.title;
+        originalData.body = noteData.body;
+        buttonContainer.classList.remove("visible");
+        noteTitleInput.blur();
+        noteTextarea.blur();
+        glow(singularNote);
+    });    
+
     buttonContainer.appendChild(saveButton);
     buttonContainer.appendChild(discardButton);
 
-    noteNav.appendChild(noteTitle);
+    noteNav.appendChild(noteTitleInput);
     noteNav.appendChild(noteOptions);
     singularNote.appendChild(noteNav);
-    singularNote.appendChild(notePara);
+    singularNote.appendChild(noteTextarea);
     singularNote.appendChild(buttonContainer);
 
     document.getElementById("notes").appendChild(singularNote);
-    noteTitle.focus();
+    noteTitleInput.focus();
 }
 
 function glow(element) {
@@ -107,4 +160,26 @@ function glow(element) {
     }, 1000);
 }
 
-createCard({ title: "", body: "" });
+createCard();
+
+document.getElementById("newnotebtn").addEventListener("click", () => {
+    createCard();
+})
+
+document.addEventListener("keyup", (event) => {
+    if (event.key == "n" && isNotFocusedOnInput()) {
+        createCard()
+    }
+})
+
+function isNotFocusedOnInput() {
+    const active = document.activeElement;
+    return !(
+      active && (
+        active.tagName === 'INPUT' ||
+        active.tagName === 'TEXTAREA' ||
+        active.isContentEditable
+      )
+    );
+  }
+  

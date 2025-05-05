@@ -26,15 +26,30 @@
         <div class="editor">
             <div class="panel sidepanels timeblocksbar">
                 <div id="time_blocks">
-                    <div class="time_block">
+                    <div class="time_block  ">
                         <div class="time_block_text">09:00 - 09:30 AM</div>
-                        <div class="time_block_options msr btn">close</div>
+                        <div class="time_block_options btn toolticont">
+                            <div class="tooltip byright">
+                                <div class="tooltitit">Remove event</div>
+                            </div>
+                            <span class="msr">close</span>
+
+                        </div>
+
                     </div>
                 </div>
-                <div class="btnrl">Add New <i class="msr btn">add</i></div>
+                <div class="btnrl toolticont" id="newnotebtn">
+                    <div class="btntxt">
+                        Add New
+                    </div><i class="msr btn">add</i>
+                    <div class="tooltip">
+                        <div class="tooltitit">Add New</div>
+                        <kbd>N</kbd>
+                    </div>
+                </div>
             </div>
             <div class="notes panel" id="notes">
-                
+
             </div>
             <div class="clock sidepanels panel">
             </div>

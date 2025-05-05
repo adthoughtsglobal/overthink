@@ -23,7 +23,7 @@ html {
 }
 
 body {
-	font-family: "IBM Plex Sans", sans-serif;
+    font-family: "IBM Plex Sans", sans-serif;
     margin: 0;
     height: 100vh;
     background-color: grey;
@@ -34,6 +34,15 @@ body {
     display: flex;
     flex-direction: column;
     height: 100%;
+}
+
+input,
+textarea,
+button {
+    outline: 0;
+    border: 0;
+    font-size: inherit;
+    font-family: inherit;
 }
 
 .nav {
@@ -48,8 +57,16 @@ body {
     height: 100%;
 }
 
-h1 {
-	font-family: 'Poppins', sans-serif;
+.note_title {
+    font-family: 'Poppins', sans-serif;
+    font-weight: bold;
+    margin-top: .3em;
+    margin-bottom: 5px;
+    flex: 1;
+    font-size: 2em;
+    min-width: 0;
+    width: 0;
+    text-overflow: ellipsis;
 }
 
 .panel {
@@ -63,8 +80,8 @@ h1 {
 
 .sidepanels {
     max-width: 200px;
-    box-shadow: 0 5px 10px black;
     z-index: 2;
+    border: 1px solid rgba(172, 172, 172, 0.507);
 }
 
 .singular_note {
@@ -88,16 +105,9 @@ h1 {
     gap: 1em;
 }
 
-.note_nav > h1 {
-    margin-top: .3em;
-    margin-bottom: 5px;
-    flex: 1;
-}
-
 .singular_note {
     flex-direction: column;
-    display: flex
-;
+    display: flex;
     border: 1px solid rgb(145, 145, 145);
     border-radius: .5em;
     padding: 1em;
@@ -109,9 +119,9 @@ h1 {
     box-shadow: 0 3px 10px #00000063;
 }
 
-.time_block, .btnrl {
-    display: flex
-;
+.time_block,
+.btnrl {
+    display: flex;
     flex-direction: row;
     padding: 5px;
     border: 1px solid rgb(145, 145, 145);
@@ -119,7 +129,7 @@ h1 {
     border-radius: .5em;
     height: fit-content;
     white-space: nowrap;
-    overflow: hidden;
+    overflow: visible;
     transition: .2s;
     align-items: center;
     gap: 7px;
@@ -128,8 +138,7 @@ h1 {
 }
 
 .btn {
-    display: flex
-;
+    display: flex;
     padding: .2em;
     cursor: pointer;
     border-radius: 7px;
@@ -177,7 +186,7 @@ h1 {
 }
 
 .button-container {
-    overflow: hidden;
+    overflow: visible;
     height: 0;
     opacity: 0;
     transition: opacity 200ms ease, height 200ms ease;
@@ -188,14 +197,105 @@ h1 {
 
 .button-container.visible {
     opacity: 1;
-    height: 40px;
+    height: 45px;
 }
 
 .glow {
     animation: 1s glow;
 }
+
 @keyframes glow {
     25% {
         background-color: #d6cbff;
     }
+}
+
+.note_para {
+    min-height: 45px;
+}
+
+.note_title,
+.note_para {
+    background-color: transparent;
+}
+
+.note_options {
+    display: flex;
+    flex-direction: row;
+    gap: 3px;
+}
+
+kbd {
+    padding: 2px;
+    background-color: #1d1d1d;
+    color: rgb(255, 174, 120);
+    border-radius: 3px;
+}
+
+.toolticont {
+    position: relative;
+    overflow: visible;
+}
+
+.tooltip {
+    display: flex;
+    visibility: hidden;
+    position: absolute;
+    top: 120%;
+    left: 25%;
+    background: #0e0e0e;
+    color: white;
+    border-radius: .5em;
+    padding: .5em;
+    z-index: 5;
+    flex-direction: row;
+    gap: 10px;
+    align-items: center;
+    opacity: 0;
+    transition: opacity .2s;
+}
+
+.tooltip:before {
+    content: '';
+    position: absolute;
+    top: -3px;
+    left: 50%;
+    height: 10px;
+    width: 10px;
+    background: #0e0e0e;
+    transform: rotateZ(45deg);
+}
+
+.tooltip.byright {
+    top: -10%;
+    left: 130%;
+}
+
+.tooltip.byright::before {
+    top: 13px;
+    left: -3%;
+}
+
+.toolticont:hover > .tooltip {
+    display: flex;
+    visibility: visible;
+    opacity: 1;
+}
+
+.time_btn {
+    padding: .2em .5em;
+}
+
+.button-container .tooltip {
+    left: -6px;
+}
+
+.note_options .tooltip {
+    right: 0;
+    left: auto;
+}
+
+.note_options .tooltip::before {
+    right: 7%;
+    left: auto;
 }
