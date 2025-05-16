@@ -39,9 +39,7 @@ function createCard({ title = "Give a title...", body = "Hit Enter once you're d
     const time = document.createElement("div");
     time.className = "btn time_btn";
     time.innerText = "09:00 - 09:30 AM";
-    time.addEventListener("click", async () => {
-        time.innerText = (await askTimes()).timeRangeString;
-    });
+
 
     noteOptions.appendChild(time);
     noteOptions.appendChild(delbtn);
@@ -113,6 +111,7 @@ function createCard({ title = "Give a title...", body = "Hit Enter once you're d
     noteTitleInput.addEventListener("keydown", (e) => {
         if (e.key === "Enter") {
             e.preventDefault();
+            timeset();
             noteTextarea.focus();
         }
     });
@@ -148,8 +147,56 @@ function createCard({ title = "Give a title...", body = "Hit Enter once you're d
     singularNote.appendChild(noteNav);
     singularNote.appendChild(noteTextarea);
     singularNote.appendChild(buttonContainer);
-
     document.getElementById("notes").appendChild(singularNote);
+
+    const singularTimeBlock = document.createElement("div");
+    singularTimeBlock.classList.add("time_block");
+
+    singularTimeBlock.addEventListener("click", () => {
+        singularNote.scrollIntoView({
+            behavior: 'smooth',
+            block: 'start',
+            inline: 'nearest'
+        });
+        glow(singularNote);
+    })
+
+    async function timeset() {
+        let tmp = (await askTimes()).timeRangeString;
+        time.innerText = tmp;
+        timeBlockText.innerText = tmp;
+        noteTextarea.focus();
+    }
+
+    const timeBlockText = document.createElement("div");
+    timeBlockText.classList.add("time_block_text");
+    timeBlockText.textContent = "09:00 - 09:30 AM";
+    time.addEventListener("click", timeset);
+    const timeBlockOptions = document.createElement("div");
+    timeBlockOptions.classList.add("time_block_options", "btn", "toolticont");
+
+    const tooltip = document.createElement("div");
+    tooltip.classList.add("tooltip", "byright");
+
+    const tooltitit = document.createElement("div");
+    tooltitit.classList.add("tooltitit");
+    tooltitit.textContent = "Remove event";
+
+    tooltip.appendChild(tooltitit);
+
+    const closeSpan = document.createElement("span");
+    closeSpan.classList.add("msr");
+    closeSpan.textContent = "close";
+
+    timeBlockOptions.appendChild(tooltip);
+    timeBlockOptions.appendChild(closeSpan);
+
+    singularTimeBlock.appendChild(timeBlockText);
+    singularTimeBlock.appendChild(timeBlockOptions);
+
+    document.getElementById("notes").appendChild(singularTimeBlock);
+
+    document.getElementById("time_blocks").appendChild(singularTimeBlock);
     noteTitleInput.focus();
 }
 
@@ -280,3 +327,29 @@ function buildTimeRangeString(startDate, endDate) {
         return `${start.time} ${start.ampm} - ${end.time} ${end.ampm}`;
     }
 }
+
+
+ function updateClock() {
+    const now = new Date();
+
+    const seconds = now.getSeconds();
+    const minutes = now.getMinutes();
+    const hours = now.getHours();
+
+    const secondDeg = seconds * 6;
+    const minuteDeg = minutes * 6 + seconds * 0.1;
+    const hourDeg = ((hours % 12) + minutes / 60) * 30;
+
+    document.getElementById('secondHand').style.transform = `translateX(-50%) rotate(${secondDeg}deg)`;
+    document.getElementById('minuteHand').style.transform = `translateX(-50%) rotate(${minuteDeg}deg)`;
+    document.getElementById('hourHand').style.transform = `translateX(-50%) rotate(${hourDeg}deg)`;
+
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    const hour12 = hours % 12 || 12;
+    const minuteStr = minutes.toString().padStart(2, '0');
+    const timeStr = `${hour12}:${minuteStr} ${ampm}`;
+    document.getElementById('textClock').textContent = timeStr;
+  }
+
+  setInterval(updateClock, 1000);
+  updateClock();

@@ -93,8 +93,9 @@ button {
     display: flex;
     flex-direction: column;
     padding: 1em;
-    align-items: center;
     z-index: 1;
+    overflow: auto;
+    align-items: stretch;
 }
 
 .note_nav {
@@ -331,4 +332,65 @@ input[type="time"] {
 .inpgrp {
     display: flex;
     flex-direction: column;
+}
+
+.clockrl {
+    position: relative;
+    border: 10px solid #9c9c9c;
+    border-radius: 50%;
+    aspect-ratio: 1 / 1;
+    box-shadow: 0 5px 0 #787878, 0 7px 8px #0000008a, 0 3px 5px #0000006b inset, 0 -7px 5px #ffffffa8;
+    background: url(src/clk.png);
+    background-size: 110%;
+    background-repeat: no-repeat;
+    background-position: center;
+}
+
+.hand {
+    position: absolute;
+    bottom: 50%;
+    left: 50%;
+    transform-origin: bottom center;
+    transform: translateX(-50%) rotate(0deg);
+}
+
+.hour {
+    width: 7px;
+    height: 30%;
+    background: black;
+    border-radius: 5px;
+}
+
+.minute {
+    width: 5px;
+    height: 40%;
+    background: black;
+    border-radius: 5px;
+}
+
+.second {
+    width: 2px;
+    height: 40%;
+    background: red;
+}
+
+.text-clock {
+    margin-top: 20px;
+    font-size: 2em;
+    font-weight: bold;
+    color: black;
+    text-align: center;
+    opacity: .5;
+}
+
+.clockcenter {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    background: #ffffff;
+    outline: 3px solid black;
+    left: calc(50% - 7px);
+    top: calc(50% - 7px);
+    box-shadow: 0 5px 5px black;
+    border-radius: 55%;
 }

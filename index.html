@@ -25,19 +25,7 @@
         </div>
         <div class="editor">
             <div class="panel sidepanels timeblocksbar">
-                <div id="time_blocks">
-                    <div class="time_block  ">
-                        <div class="time_block_text">09:00 - 09:30 AM</div>
-                        <div class="time_block_options btn toolticont">
-                            <div class="tooltip byright">
-                                <div class="tooltitit">Remove event</div>
-                            </div>
-                            <span class="msr">close</span>
-
-                        </div>
-
-                    </div>
-                </div>
+                <div id="time_blocks"></div>
                 <div class="btnrl toolticont" id="newnotebtn">
                     <div class="btntxt">
                         Add New
@@ -52,19 +40,23 @@
 
             </div>
             <div class="clock sidepanels panel">
-                <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/mdtimepicker/mdtimepicker.min.css">
-                <script src="https://cdn.jsdelivr.net/npm/mdtimepicker/mdtimepicker.min.js"></script>
-
+                <div class="clockrl">
+                    <div class="hand hour" id="hourHand"></div>
+                    <div class="hand minute" id="minuteHand"></div>
+                    <div class="hand second" id="secondHand"></div>
+                    <div class="clockcenter"></div>
+                </div>
+                <div class="text-clock" id="textClock">00:00 AM</div>
             </div>
         </div>
     </div>
     <div id="timepicker">
         <div class="form">
             <div class="inpgrp">
-            <label for="startTime">From: </label>
-            <input type="time" id="startTime">
-            <label for="endTime">To: </label>
-            <input type="time" id="endTime">
+                <label for="startTime">From: </label>
+                <input type="time" id="startTime">
+                <label for="endTime">To: </label>
+                <input type="time" id="endTime">
             </div>
             <div class="btnrl" id="timesubbtn">
                 <div class="btntxt">
