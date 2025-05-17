@@ -84,11 +84,6 @@ button {
     border: 1px solid rgba(172, 172, 172, 0.507);
 }
 
-.singular_note {
-    flex-direction: column;
-    background-color: rgb(255, 255, 255);
-}
-
 .notes {
     display: flex;
     flex-direction: column;
@@ -107,13 +102,15 @@ button {
 }
 
 .singular_note {
+    background-color: rgb(255, 255, 255);
     flex-direction: column;
     display: flex;
     border: 1px solid rgb(145, 145, 145);
     border-radius: .5em;
     padding: 1em;
     transition: .2s;
-    width: 500px;
+    max-width: 500px;
+    min-width: 300px;
 }
 
 .singular_note:hover {
