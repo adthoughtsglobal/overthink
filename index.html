@@ -8,64 +8,86 @@
 <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
-    <title>Overthink - Track the day</title>
-    <meta name="description" content="">
+    <title>Overthink</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="fonts/fafa.css">
 </head>
 
 <body>
     <!--[if lt IE 7]>
             <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
-    <div class="project">
-        <div class="nav">
-
+    <div id="tasks_main_tree">
+        <div class="ind_task">
+            <div class="task_hir_line"></div>
+            <div class="task_inner">
+                <div class="icn task_expand">
+                    chevron_right
+                </div>
+                <div class="task_data">
+                    <input type="text" placeholder="Do the dishes...">
+                    <div class="task_additional">3 subtasks &bull; 20 total</div>
+                </div>
+                <div class="completion_toggle icn">
+                    check
+                </div>
+            </div>
+            <div class="new_task_btn icn">add
+            </div>
         </div>
-        <div class="editor">
-            <div class="panel sidepanels timeblocksbar">
-                <div id="time_blocks"></div>
-                <div class="btnrl toolticont" id="newnotebtn">
-                    <div class="btntxt">
-                        Add New
-                    </div><i class="msr btn">add</i>
-                    <div class="tooltip">
-                        <div class="tooltitit">Add New</div>
-                        <kbd>N</kbd>
+        <div class="ind_task">
+            <div class="task_hir_line"></div>
+            <div class="task_inner">
+                <div class="icn task_expand">
+                    chevron_right
+                </div>
+                <div class="task_data">
+                    <input type="text" placeholder="Do the dishes...">
+                    <div class="task_additional">1 subtask &bull; 4 total</div>
+                </div>
+                <div class="completion_toggle icn">
+                    check
+                </div>
+
+            </div>
+            <div class="ind_task">
+                <div class="task_hir_line"></div>
+                <div class="task_inner">
+                    <div class="icn task_expand">
+                        chevron_right
                     </div>
-                </div>
-            </div>
-            <div class="notes panel" id="notes">
+                    <div class="task_data">
+                        <input type="text" placeholder="Do the dishes...">
+                        <div class="task_additional">3 subtasks &bull; 20 total</div>
+                    </div>
+                    <div class="completion_toggle icn">
+                        check
+                    </div>
 
-            </div>
-            <div class="clock sidepanels panel">
-                <div class="clockrl">
-                    <div class="hand hour" id="hourHand"></div>
-                    <div class="hand minute" id="minuteHand"></div>
-                    <div class="hand second" id="secondHand"></div>
-                    <div class="clockcenter"></div>
                 </div>
-                <div class="text-clock" id="textClock">00:00 AM</div>
+            </div>
+            <div class="ind_task">
+                <div class="task_hir_line"></div>
+                <div class="task_inner">
+                    <div class="icn task_expand">
+                        chevron_right
+                    </div>
+                    <div class="task_data">
+                        <input type="text" placeholder="Do the dishes...">
+                        <div class="task_additional">3 subtasks &bull; 20 total</div>
+                    </div>
+                    <div class="completion_toggle icn">
+                        check
+                    </div>
+
+                </div>
+            </div>
+            <div class="new_task_btn">
+                <div class="icn">add</div>
+                <div>Add new</div>
             </div>
         </div>
     </div>
-    <div id="timepicker">
-        <div class="form">
-            <div class="inpgrp">
-                <label for="startTime">From: </label>
-                <input type="time" id="startTime">
-                <label for="endTime">To: </label>
-                <input type="time" id="endTime">
-            </div>
-            <div class="btnrl" id="timesubbtn">
-                <div class="btntxt">
-                    Use this time
-                </div><i class="msr btn">check</i>
-            </div>
-        </div>
-    </div>
-
     <script src="script.js" async defer></script>
 </body>
 
