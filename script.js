@@ -71,7 +71,7 @@ function renderTask(tree, task, container, depth, parentId = "") {
     for (let i = -1; i < depth; i++) {
         const line = document.createElement("div")
         line.className = "task_hir_line"
-        line.style.left =( i * 4)+ 3.2 + "em"
+        line.style.left = (i * 4) + 3.2 + "em"
         wrap.appendChild(line)
     }
 
@@ -79,9 +79,12 @@ function renderTask(tree, task, container, depth, parentId = "") {
     inner.className = "task_inner"
     inner.style.marginLeft = depth * 4 + "em"
 
-    const expand = document.createElement("div")
-    expand.className = "icn task_expand"
-    expand.textContent = "chevron_right"
+    let expand = false;
+    if (task.children.length > 0) {
+        expand = document.createElement("div")
+        expand.className = "icn task_expand"
+        expand.textContent = "chevron_right"
+    }
 
     const data = document.createElement("div")
     data.className = "task_data"
@@ -90,17 +93,25 @@ function renderTask(tree, task, container, depth, parentId = "") {
     input.type = "text"
     input.value = task.data
 
-    const meta = document.createElement("div")
-    meta.className = "task_additional"
-    meta.textContent = `${task.children.length} subtasks`
+    data.appendChild(input)
 
-    data.append(input, meta)
+    if (task.children.length > 0) {
+        const meta = document.createElement("div")
+        meta.className = "task_additional"
+        meta.innerHTML = `${task.children.length} subtasks &bull; Pending`;
+        data.appendChild(meta)
+    } else {
+        const meta = document.createElement("div")
+        meta.className = "task_additional"
+        meta.textContent = `Pending`;
+        data.appendChild(meta)
+    }
 
     const toggle = document.createElement("div")
     toggle.className = "completion_toggle icn"
     toggle.textContent = "check"
 
-    inner.append(expand, data, toggle)
+    inner.append((expand)?expand:'', data, toggle)
 
     const addBtn = document.createElement("div")
     addBtn.className = "new_task_btn"
@@ -110,26 +121,26 @@ function renderTask(tree, task, container, depth, parentId = "") {
 
     wrap.append(inner, addBtn)
     container.appendChild(wrap)
-   container.addEventListener("mouseover", e => {
-    const row = e.target.closest(".ind_task")
-    if (!row) return
-    highlightAncestors(row, true)
-})
+    container.addEventListener("mouseover", e => {
+        const row = e.target.closest(".ind_task")
+        if (!row) return
+        highlightAncestors(row, true)
+    })
 
-container.addEventListener("mouseout", e => {
-    const row = e.target.closest(".ind_task")
-    if (!row) return
-    highlightAncestors(row, false)
-})
+    container.addEventListener("mouseout", e => {
+        const row = e.target.closest(".ind_task")
+        if (!row) return
+        highlightAncestors(row, false)
+    })
 
-function highlightAncestors(row, on) {
-    let current = row
-    while (current) {
-        current.classList.toggle("ancestor_hover", on)
-        const pid = current.dataset.parent
-        current = pid ? document.querySelector(`[data-taskid="${pid}"]`) : null
+    function highlightAncestors(row, on) {
+        let current = row
+        while (current) {
+            current.classList.toggle("ancestor_hover", on)
+            const pid = current.dataset.parent
+            current = pid ? document.querySelector(`[data-taskid="${pid}"]`) : null
+        }
     }
-}
 
 
     task.children.forEach(id => {
