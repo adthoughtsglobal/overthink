@@ -458,3 +458,5 @@ textarea::placeholder {
         display: flex;
     }
 }
+
+.drag_over { outline: 2px dashed #888 }

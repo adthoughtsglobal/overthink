@@ -2,64 +2,75 @@ class TaskTree {
     constructor() {
         this.tasks = []
         this.index = new Map()
+        this.parents = new Map()
     }
 
     _id() {
         return crypto.randomUUID()
     }
 
-    _removeRef(id) {
-        for (const t of this.tasks) {
-            t.children = t.children.filter(c => c !== id)
-        }
-    }
+    _removeRef(id) { for (const t of this.tasks) { t.children = t.children.filter(c => c !== id) } }
 
-    addTaskToTaskId(data = "", status = "pending", parentId = null) {
+    addTask(data = "", status = "pending", parentId = null) {
         const taskid = this._id()
         const task = { taskid, data, status, children: [] }
         this.tasks.push(task)
         this.index.set(taskid, task)
         if (parentId && this.index.has(parentId)) {
             this.index.get(parentId).children.push(taskid)
+            this.parents.set(taskid, parentId)
         }
         return taskid
     }
 
-    removeTaskById(taskid) {
+    removeTask(taskid) {
         const task = this.index.get(taskid)
         if (!task) return false
-        for (const c of task.children) this.removeTaskById(c)
-        this._removeRef(taskid)
-        this.tasks = this.tasks.filter(t => t.taskid !== taskid)
+        for (const c of task.children) this.removeTask(c)
+        const pid = this.parents.get(taskid)
+        if (pid) {
+            const p = this.index.get(pid)
+            p.children = p.children.filter(c => c !== taskid)
+        }
+        this.parents.delete(taskid)
         this.index.delete(taskid)
+        this.tasks = this.tasks.filter(t => t.taskid !== taskid)
         return true
     }
 
-    editTaskById(taskid, key, value) {
-        const task = this.index.get(taskid)
-        if (!task || !(key in task)) return false
-        task[key] = value
+    update(taskid, key, value) {
+        const t = this.index.get(taskid)
+        if (!t || !(key in t)) return false
+        t[key] = value
         return true
+    }
+
+    getRoots() {
+        return this.tasks.filter(t => !this.parents.has(t.taskid))
     }
 
     moveTaskIdToNewParentTaskId(taskid, newParentId = null) {
         if (!this.index.has(taskid)) return false
-        this._removeRef(taskid)
+        const oldParent = this.parents.get(taskid)
+        if (oldParent) {
+            const p = this.index.get(oldParent)
+            p.children = p.children.filter(c => c !== taskid)
+        }
+        this.parents.delete(taskid)
         if (newParentId && this.index.has(newParentId)) {
             this.index.get(newParentId).children.push(taskid)
+            this.parents.set(taskid, newParentId)
         }
         return true
     }
 
-    getTaskById(taskid) {
-        return this.index.get(taskid) || null
-    }
+    getTaskById(taskid) { return this.index.get(taskid) || null }
 }
 function renderTasks(tree, container) {
     container.innerHTML = ""
-    const roots = tree.tasks.filter(t => !tree.tasks.some(p => p.children.includes(t.taskid)))
-    roots.forEach(t => renderTask(tree, t, container, 0))
+    tree.getRoots().forEach(t => renderTask(tree, t, container, 0))
 }
+
 function renderTask(tree, task, container, depth, parentId = "") {
 
     const wrap = document.createElement("div")
@@ -79,6 +90,33 @@ function renderTask(tree, task, container, depth, parentId = "") {
     inner.className = "task_inner"
     inner.style.marginLeft = depth * 4 + "em"
 
+    inner.draggable = true
+
+    inner.addEventListener("dragstart", e => {
+        e.dataTransfer.setData("text/plain", task.taskid)
+        e.dataTransfer.effectAllowed = "move"
+    })
+
+    inner.addEventListener("dragover", e => {
+        e.preventDefault()
+        inner.classList.add("drag_over")
+    })
+
+    inner.addEventListener("dragleave", () => {
+        inner.classList.remove("drag_over")
+    })
+
+    inner.addEventListener("drop", e => {
+        e.preventDefault()
+        inner.classList.remove("drag_over")
+        const draggedId = e.dataTransfer.getData("text/plain")
+        if (!draggedId) return
+        if (draggedId === task.taskid) return
+        if (isDescendant(tree, draggedId, task.taskid)) return
+        tree.moveTaskIdToNewParentTaskId(draggedId, task.taskid)
+        renderTasks(tree, container)
+    })
+
     let expand = false;
     if (task.children.length > 0) {
         expand = document.createElement("div")
@@ -95,6 +133,7 @@ function renderTask(tree, task, container, depth, parentId = "") {
     input.tabIndex = 0
     input.innerText = task.data
     const initialHeight = input.style.height
+    input.oninput = () => tree.update(task.taskid, "data", input.innerText)
 
     input.addEventListener("focus", () => {
         input.classList.add("focus")
@@ -113,12 +152,6 @@ function renderTask(tree, task, container, depth, parentId = "") {
         const sel = window.getSelection()
         sel.removeAllRanges()
     })
-
-
-    input.addEventListener("input", () => {
-        task.data = input.innerText
-    })
-
 
     data.appendChild(input)
 
@@ -144,6 +177,10 @@ function renderTask(tree, task, container, depth, parentId = "") {
     addBtn.className = "new_task_btn"
     addBtn.style.marginLeft = depth * 4 + "em"
     addBtn.innerHTML = `<div class="icn">add</div>`
+    addBtn.addEventListener("click", () => {
+        tree.addTask("", "pending", task.taskid)
+        renderTasks(tree, container)
+    })
 
 
     wrap.append(inner, addBtn)
@@ -180,12 +217,12 @@ function renderTask(tree, task, container, depth, parentId = "") {
     return wrap
 }
 
-var tree = new TaskTree();
 function taskTreeFromJSON(json) {
+    const tree = new TaskTree()
     for (const t of json.tasks) {
-        const task = { taskid: t.taskid, data: t.data, status: t.status, children: [...t.children] }
-        tree.tasks.push(task)
-        tree.index.set(task.taskid, task)
+        tree.tasks.push(t)
+        tree.index.set(t.taskid, t)
+        for (const c of t.children) tree.parents.set(c, t.taskid)
     }
     return tree
 }
@@ -201,7 +238,7 @@ function taskTreeToJSON(tree) {
     }
 }
 
-taskTreeFromJSON({
+const tree = taskTreeFromJSON({
     "tasks": [
         {
             "taskid": "a1",
@@ -247,5 +284,13 @@ taskTreeFromJSON({
         }
     ]
 })
-
 renderTasks(tree, document.getElementById("tasks_main_tree"))
+
+function isDescendant(tree, id, target) {
+    if (id === target) return true
+    const t = tree.getTaskById(id)
+    if (!t) return false
+    for (const c of t.children) if (isDescendant(tree, c, target)) return true
+    return false
+}
+
