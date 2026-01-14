@@ -89,9 +89,30 @@ function renderTask(tree, task, container, depth, parentId = "") {
     const data = document.createElement("div")
     data.className = "task_data"
 
-    const input = document.createElement("input")
-    input.type = "text"
-    input.value = task.data
+    const input = document.createElement("div");
+    input.classList.add("fakeInput");
+    input.contentEditable = "true"
+    input.tabIndex = 0
+    input.innerText = task.data
+    input.addEventListener("focus", () => {
+        input.classList.add("focus")
+        const range = document.createRange()
+        range.selectNodeContents(input)
+        const sel = window.getSelection()
+        sel.removeAllRanges()
+        sel.addRange(range)
+    })
+    input.addEventListener("blur", () => {
+        input.classList.remove("focus")
+        const sel = window.getSelection()
+        sel.removeAllRanges()
+    })
+
+
+    input.addEventListener("input", () => {
+        task.data = input.innerText
+    })
+
 
     data.appendChild(input)
 
@@ -111,7 +132,7 @@ function renderTask(tree, task, container, depth, parentId = "") {
     toggle.className = "completion_toggle icn"
     toggle.textContent = "check"
 
-    inner.append((expand)?expand:'', data, toggle)
+    inner.append((expand) ? expand : '', data, toggle)
 
     const addBtn = document.createElement("div")
     addBtn.className = "new_task_btn"
@@ -153,35 +174,72 @@ function renderTask(tree, task, container, depth, parentId = "") {
     return wrap
 }
 
-const tree = new TaskTree()
+var tree = new TaskTree();
+function taskTreeFromJSON(json) {
+    for (const t of json.tasks) {
+        const task = { taskid: t.taskid, data: t.data, status: t.status, children: [...t.children] }
+        tree.tasks.push(task)
+        tree.index.set(task.taskid, task)
+    }
+    return tree
+}
 
-const root = tree.addTaskToTaskId("Prepare product launch")
+function taskTreeToJSON(tree) {
+    return {
+        tasks: tree.tasks.map(t => ({
+            taskid: t.taskid,
+            data: t.data,
+            status: t.status,
+            children: [...t.children]
+        }))
+    }
+}
 
-const research = tree.addTaskToTaskId("Market research", false, root)
-tree.addTaskToTaskId("Identify target audience", false, research)
-tree.addTaskToTaskId("Analyze competitors", false, research)
-tree.addTaskToTaskId("Define value proposition", false, research)
-
-const product = tree.addTaskToTaskId("Finalize product", false, root)
-const features = tree.addTaskToTaskId("Lock features", false, product)
-tree.addTaskToTaskId("Core functionality", false, features)
-tree.addTaskToTaskId("Edge cases", false, features)
-tree.addTaskToTaskId("Performance constraints", false, features)
-
-const qa = tree.addTaskToTaskId("Quality assurance", false, product)
-tree.addTaskToTaskId("Unit tests", false, qa)
-tree.addTaskToTaskId("Integration tests", false, qa)
-tree.addTaskToTaskId("Regression tests", false, qa)
-
-const marketing = tree.addTaskToTaskId("Marketing rollout", false, root)
-const content = tree.addTaskToTaskId("Content creation", false, marketing)
-tree.addTaskToTaskId("Landing page copy", false, content)
-tree.addTaskToTaskId("Email campaign", false, content)
-tree.addTaskToTaskId("Social media posts", false, content)
-
-const ops = tree.addTaskToTaskId("Operations", false, root)
-tree.addTaskToTaskId("Deployment plan", false, ops)
-tree.addTaskToTaskId("Monitoring setup", false, ops)
-tree.addTaskToTaskId("Rollback strategy", false, ops)
+taskTreeFromJSON({
+    "tasks": [
+        {
+            "taskid": "a1",
+            "data": "Plan weekend",
+            "status": "pending",
+            "children": ["a2", "a3"]
+        },
+        {
+            "taskid": "a2",
+            "data": "Buy groceries",
+            "status": "done",
+            "children": ["a4", "a5"]
+        },
+        {
+            "taskid": "a3",
+            "data": "Fix bike",
+            "status": "pending",
+            "children": []
+        },
+        {
+            "taskid": "a4",
+            "data": "Milk and eggs",
+            "status": "done",
+            "children": []
+        },
+        {
+            "taskid": "a5",
+            "data": "Coffee beans",
+            "status": "pending",
+            "children": []
+        },
+        {
+            "taskid": "b1",
+            "data": "Learn something new",
+            "status": "pending",
+            "children": ["b2"]
+        },
+        {
+            "taskid": "b2",
+            "data": "Read about astrophysics",
+            "status": "pending",
+            "children": []
+        }
+    ]
+})
 
 renderTasks(tree, document.getElementById("tasks_main_tree"))

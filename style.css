@@ -223,7 +223,7 @@ textarea::placeholder {
 .ind_task {
     gap: .5em;
     position: relative;
-    margin-left: 2em;
+    margin-left: 5em;
     display: flex;
     flex-direction: column;
 
@@ -238,7 +238,12 @@ textarea::placeholder {
         border: var(--box-crisp);
         align-items: center;
         gap: .5em;
-        padding: 0 .5em;
+        transition: .3s;
+        padding:.5em;
+
+        &:hover {
+            background-color: var(--col-bg3);
+        }
 
         &>.icn {
             padding: .2em;
@@ -249,19 +254,56 @@ textarea::placeholder {
             }
         }
 
-        &>.task_data {
+        .task_data {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            height: fit-content;
+            min-height: 2.8em;
 
-            &>input {
+            &>.fakeInput {
                 background-color: transparent;
                 color: inherit;
                 border: none;
                 font-size: 1.1em;
-                padding: 0;
+                padding: .3em;
+                transition: padding 0.3s, background 0.3s;
+                box-sizing: border-box;
+                white-space: wrap;
+                z-index: 3;
+                max-width: 400px;
+                overflow: hidden;
+                overflow-wrap: anywhere;
+                user-select: text;
+                cursor: text;
+                outline: none;
             }
 
             &>.task_additional {
-                opacity: .5;
+                opacity: 0.5;
+                overflow: hidden;
+                transition: opacity .3s, transform .3s;
+                padding: 0 .3em;
+                transform-origin: bottom;
+                height: 1.5em;
+            }
+
+            &:has(> .fakeInput.focus) {
+            padding-bottom: 0;
+                &>.fakeInput {
+                    padding: .7em 1em;
+                    background-color: var(--col-bg1);
+                    border-radius: .5em;
+                    border: var(--box-crisp);
+                    height: 3.5em;
+                }
+
+                &>.task_additional {
+                    opacity: 0;
+                    height: 0;
+                    padding: 0;
+                }
             }
         }
     }
@@ -270,10 +312,10 @@ textarea::placeholder {
         background: grey;
         opacity: .2;
         width: 1px;
-        height: 100%;
+        height: 120%;
         position: absolute;
         z-index: -1;
-        margin-left: 32px;
+        margin-left: -31px;
     }
 
     &>.new_task_btn {
@@ -299,13 +341,13 @@ textarea::placeholder {
     margin-left: .8em;
     position: absolute;
     left: -60px;
-    top: 10px;
+    top: 23px;
     transition: .5s;
 }
 
 .ancestor_hover .new_task_btn {
     opacity: 1;
-    box-shadow: 0 0 5px var(--col-bg1);
+    box-shadow: 0 0 1em 1em var(--col-bg1);
 }
 
 .nav {
@@ -366,6 +408,7 @@ textarea::placeholder {
         transform: translateY(5px);
         opacity: 0;
     }
+
     100% {
         transform: translateY(0px);
     }
