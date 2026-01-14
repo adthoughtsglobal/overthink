@@ -94,16 +94,22 @@ function renderTask(tree, task, container, depth, parentId = "") {
     input.contentEditable = "true"
     input.tabIndex = 0
     input.innerText = task.data
+    const initialHeight = input.style.height
+
     input.addEventListener("focus", () => {
         input.classList.add("focus")
+        input.style.height = "auto"
+        input.style.height = (input.scrollHeight + 25) + "px"
         const range = document.createRange()
         range.selectNodeContents(input)
         const sel = window.getSelection()
         sel.removeAllRanges()
         sel.addRange(range)
     })
+
     input.addEventListener("blur", () => {
         input.classList.remove("focus")
+        input.style.height = initialHeight
         const sel = window.getSelection()
         sel.removeAllRanges()
     })

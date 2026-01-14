@@ -239,7 +239,7 @@ textarea::placeholder {
         align-items: center;
         gap: .5em;
         transition: .3s;
-        padding:.5em;
+        padding: .5em;
 
         &:hover {
             background-color: var(--col-bg3);
@@ -268,7 +268,7 @@ textarea::placeholder {
                 border: none;
                 font-size: 1.1em;
                 padding: .3em;
-                transition: padding 0.3s, background 0.3s;
+                transition: padding 0.3s, background 0.3s, height .5s;
                 box-sizing: border-box;
                 white-space: wrap;
                 z-index: 3;
@@ -278,28 +278,33 @@ textarea::placeholder {
                 user-select: text;
                 cursor: text;
                 outline: none;
+                height: 2.15em;
             }
 
             &>.task_additional {
                 opacity: 0.5;
                 overflow: hidden;
-                transition: opacity .3s, transform .3s;
+                transition: opacity .3s, transform .3s, height .3s;
                 padding: 0 .3em;
                 transform-origin: bottom;
                 height: 1.5em;
             }
 
             &:has(> .fakeInput.focus) {
-            padding-bottom: 0;
+                padding-bottom: 0;
+
                 &>.fakeInput {
                     padding: .7em 1em;
                     background-color: var(--col-bg1);
                     border-radius: .5em;
                     border: var(--box-crisp);
-                    height: 3.5em;
+                    height: 3em;
+                    max-height: 40vh;
+                    overflow-y: auto;
                 }
 
                 &>.task_additional {
+                    transition: opacity .3s, transform .3s, height 0s;
                     opacity: 0;
                     height: 0;
                     padding: 0;
