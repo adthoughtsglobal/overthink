@@ -70,13 +70,75 @@ function renderTasks(tree, container) {
     container.innerHTML = ""
     tree.getRoots().forEach(t => renderTask(tree, t, container, 0))
 }
+function renderTask(tree, task, container, depth, parentId = "", hidden = false) {
 
-function renderTask(tree, task, container, depth, parentId = "") {
+    function toggleChildren(parentId, hide) {
+        const rows = [...container.querySelectorAll(".ind_task")]
+        let active = false
+
+        for (const row of rows) {
+            if (row.dataset.taskid === String(parentId)) {
+                active = true
+                continue
+            }
+            if (!active) continue
+            if (!row.dataset.parent) break
+
+            let p = row.dataset.parent
+            let isDescendant = false
+            let blocked = false
+
+            while (p) {
+                if (p === String(parentId)) isDescendant = true
+                const t = tree.getTaskById(p)
+                if (t && t.collapsed && p !== parentId) blocked = true
+                const el = container.querySelector(`[data-taskid="${p}"]`)
+                p = el ? el.dataset.parent : ""
+            }
+
+            if (!isDescendant) break
+
+            if (hide || blocked) {
+                if (row.style.display === "none") continue
+                row.style.overflowY = "hidden"
+                const h = row.scrollHeight
+                row.style.height = h + "px"
+                row.offsetHeight
+                row.style.height = "0px"
+                row.addEventListener("transitionend", function t(e) {
+                    if (e.propertyName === "height") {
+                        row.style.display = "none"
+                        row.style.height = ""
+                        row.style.overflowY = ""
+                        row.removeEventListener("transitionend", t)
+                    }
+                })
+            } else {
+                if (row.style.display !== "none") continue
+                row.style.display = ""
+                row.style.overflowY = "hidden"
+                row.style.height = "0px"
+                const h = row.scrollHeight
+                row.offsetHeight
+                row.style.height = h + "px"
+                row.addEventListener("transitionend", function t(e) {
+                    if (e.propertyName === "height") {
+                        row.style.height = ""
+                        row.style.overflowY = ""
+                        row.removeEventListener("transitionend", t)
+                    }
+                })
+            }
+        }
+    }
+
+
 
     const wrap = document.createElement("div")
     wrap.className = "ind_task"
     wrap.dataset.taskid = task.taskid
     wrap.dataset.parent = parentId || ""
+    if (hidden) wrap.style.display = "none"
 
 
     for (let i = -1; i < depth; i++) {
@@ -90,17 +152,69 @@ function renderTask(tree, task, container, depth, parentId = "") {
     inner.className = "task_inner"
     inner.style.marginLeft = depth * 4 + "em"
 
+
+    let expand = null;
+    if (task.children.length > 0) {
+        expand = document.createElement("div")
+        expand.className = "icn task_expand"
+        expand.textContent = "chevron_right"
+        expand.style.transform = task.collapsed ? "rotate(0deg)" : "rotate(90deg)"
+
+        expand.addEventListener("click", e => {
+            e.stopPropagation()
+            task.collapsed = !task.collapsed
+            if (task.collapsed) {
+                expand.style.transform = "rotate(0deg)";
+            } else {
+                expand.style.transform = "rotate(90deg)";
+            }
+            toggleChildren(task.taskid, task.collapsed)
+        })
+    }
+
+
     inner.draggable = true
 
     inner.addEventListener("dragstart", e => {
+        if (!task.collapsed) expand?.click();
         e.dataTransfer.setData("text/plain", task.taskid)
         e.dataTransfer.effectAllowed = "move"
+        inner.style.opacity = ".5";
+
+        input.contentEditable = "false"
+        input.style.userSelect = "none"
+        input.blur();
+
+        const clone = inner.cloneNode(true)
+        clone.style.position = "absolute"
+        clone.style.top = "-9999px"
+        clone.style.left = "-9999px"
+        clone.style.boxShadow = "0 0 10px #000000ab"
+        clone.style.transform = "rotate(30deg)"
+        document.body.appendChild(clone)
+        e.dataTransfer.setDragImage(clone, clone.offsetWidth / 2, clone.offsetHeight / 2)
+        setTimeout(() => document.body.removeChild(clone), 0)
+
+
+        setTimeout(() => document.body.removeChild(clone), 0)
     })
+
+    inner.addEventListener("dragend", () => {
+        inner.style.opacity = "1";
+        inner.classList.remove("drag_over");
+
+        input.contentEditable = "true"
+        input.style.userSelect = "auto"
+    })
+
 
     inner.addEventListener("dragover", e => {
         e.preventDefault()
-        inner.classList.add("drag_over")
+        if (!inner.classList.contains("drag_over")) {
+            inner.classList.add("drag_over")
+        }
     })
+
 
     inner.addEventListener("dragleave", () => {
         inner.classList.remove("drag_over")
@@ -113,16 +227,10 @@ function renderTask(tree, task, container, depth, parentId = "") {
         if (!draggedId) return
         if (draggedId === task.taskid) return
         if (isDescendant(tree, draggedId, task.taskid)) return
+        tree.update(draggedId, "collapsed", false)
         tree.moveTaskIdToNewParentTaskId(draggedId, task.taskid)
         renderTasks(tree, container)
     })
-
-    let expand = false;
-    if (task.children.length > 0) {
-        expand = document.createElement("div")
-        expand.className = "icn task_expand"
-        expand.textContent = "chevron_right"
-    }
 
     const data = document.createElement("div")
     data.className = "task_data"
@@ -210,10 +318,11 @@ function renderTask(tree, task, container, depth, parentId = "") {
     task.children.forEach(id => {
         const child = tree.getTaskById(id)
         if (child) {
-            const el = renderTask(tree, child, container, depth + 1, task.taskid)
+            renderTask(tree, child, container, depth + 1, task.taskid, hidden || task.collapsed)
         }
-
     })
+    if (task.collapsed && !hidden) toggleChildren(task.taskid, true)
+
     return wrap
 }
 

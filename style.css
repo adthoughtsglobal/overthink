@@ -213,6 +213,18 @@ textarea::placeholder {
 
 /* tasks list */
 
+@keyframes ignite {
+    0% {
+        opacity: 0;
+        transform: translate(-5px, -5px);
+    }
+
+    100% {
+        opacity: 1;
+        transform: 0;
+    }
+}
+
 #tasks_main_tree {
     display: flex;
     height: fit-content;
@@ -226,92 +238,7 @@ textarea::placeholder {
     margin-left: 5em;
     display: flex;
     flex-direction: column;
-
-    &>.task_inner {
-        display: flex;
-        flex-direction: row;
-        background-color: var(--col-bg2);
-        border-radius: .5em;
-        width: fit-content;
-        min-width: 300px;
-        margin-left: 1em;
-        border: var(--box-crisp);
-        align-items: center;
-        gap: .5em;
-        transition: .3s;
-        padding: .5em;
-
-        &:hover {
-            background-color: var(--col-bg3);
-        }
-
-        &>.icn {
-            padding: .2em;
-            border-radius: 1em;
-
-            &:hover {
-                background: var(--col-bg3);
-            }
-        }
-
-        .task_data {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            position: relative;
-            height: fit-content;
-            min-height: 2.8em;
-
-            &>.fakeInput {
-                background-color: transparent;
-                color: inherit;
-                border: none;
-                font-size: 1.1em;
-                padding: .3em;
-                transition: padding 0.3s, background 0.3s, height .5s;
-                box-sizing: border-box;
-                white-space: wrap;
-                z-index: 3;
-                max-width: 400px;
-                overflow: hidden;
-                overflow-wrap: anywhere;
-                user-select: text;
-                cursor: text;
-                outline: none;
-                height: 2.15em;
-            }
-
-            &>.task_additional {
-                opacity: 0.5;
-                overflow: hidden;
-                transition: opacity .3s, transform .3s, height .3s;
-                padding: 0 .3em;
-                transform-origin: bottom;
-                height: 1.5em;
-            }
-
-            &:has(> .fakeInput.focus) {
-                padding-bottom: 0;
-
-                &>.fakeInput {
-                    padding: .7em 1em;
-                    background-color: var(--col-bg1);
-                    border-radius: .5em;
-                    border: var(--box-crisp);
-                    height: 3em;
-                    max-height: 40vh;
-                    overflow-y: auto;
-                }
-
-                &>.task_additional {
-                    transition: opacity .3s, transform .3s, height 0s;
-                    opacity: 0;
-                    height: 0;
-                    padding: 0;
-                }
-            }
-        }
-    }
+    transition: height .25s cubic-bezier(0.075, 0.82, 0.165, 1);
 
     &>.task_hir_line {
         background: grey;
@@ -331,6 +258,98 @@ textarea::placeholder {
     &:hover {
         &>.new_task_btn {
             opacity: 1;
+        }
+    }
+}
+
+.task_inner {
+    display: flex;
+    flex-direction: row;
+    background-color: var(--col-bg2);
+    border-radius: .5em;
+    width: fit-content;
+    min-width: 300px;
+    margin-left: 1em;
+    border: var(--box-crisp);
+    align-items: center;
+    gap: .5em;
+    transition: .3s;
+    padding: .5em;
+    animation: ignite .3s;
+
+    &>.task_expand {
+        transition: .3s;
+    }
+
+    &:hover {
+        background-color: var(--col-bg3);
+    }
+
+    &>.icn {
+        padding: .2em;
+        border-radius: 1em;
+        border: 1px solid transparent;
+
+        &:hover {
+            border: var(--box-crisp);
+        }
+    }
+
+    .task_data {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        position: relative;
+        height: fit-content;
+        min-height: 2.8em;
+
+        &>.fakeInput {
+            background-color: transparent;
+            color: inherit;
+            border: none;
+            font-size: 1.1em;
+            padding: .3em;
+            transition: padding 0.3s, background 0.3s, height .5s;
+            box-sizing: border-box;
+            white-space: wrap;
+            z-index: 3;
+            max-width: 400px;
+            overflow: hidden;
+            overflow-wrap: anywhere;
+            user-select: text;
+            cursor: text;
+            outline: none;
+            height: fit-content;
+        }
+
+        &>.task_additional {
+            opacity: 0.5;
+            overflow: hidden;
+            transition: opacity .3s, transform .3s, height .3s;
+            padding: 0 .3em;
+            transform-origin: bottom;
+            height: 1.5em;
+        }
+
+        &:has(> .fakeInput.focus) {
+            padding-bottom: 0;
+
+            &>.fakeInput {
+                padding: .7em 1em;
+                background-color: var(--col-bg1);
+                border-radius: .5em;
+                border: var(--box-crisp);
+                height: 3em;
+                max-height: 40vh;
+                overflow-y: auto;
+            }
+
+            &>.task_additional {
+                transition: opacity .3s, transform .3s, height 0s;
+                opacity: 0;
+                height: 0;
+                padding: 0;
+            }
         }
     }
 }
@@ -459,4 +478,13 @@ textarea::placeholder {
     }
 }
 
-.drag_over { outline: 2px dashed #888 }
+@keyframes shaking {
+    50% {
+        padding: 1.5em;
+    }
+}
+
+.drag_over {
+    padding: 2em !important;
+
+}
