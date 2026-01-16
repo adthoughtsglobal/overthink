@@ -41,10 +41,6 @@
                             <div class="icn">open_in_new</div>
                         </div>
                         <div class="btn">
-                            <div class="label">Save As</div>
-                            <div class="icn">save_as</div>
-                        </div>
-                        <div class="btn">
                             <div class="label">Export As</div>
                             <div class="icn">download</div>
                         </div>
@@ -66,11 +62,21 @@
                         </div>
                     </div>
                 </div>
-
-
             </div>
+            <div class="divider"></div>
             <div class="group inputs" style="max-width: 300px;">
                 <input type="text" id="titleEditor" placeholder="Untitled">
+            </div>
+            <div class="seperator"></div>
+            <div class="group vert progressbarCont">
+                <div class="label" id="in_file_completition_text">0% Completed</div>
+                <div class="progressbar">
+                    <div class="progressbarline" id="in_file_completition_bar"></div>
+                </div>
+            </div>
+            <div class="divider"></div>
+            <div class="group">
+                <a href="#" onclick="window.open(window.location.href, '_blank'); window.close();">Auto SPA switch</a>
             </div>
         </div>
         <div class="group inputs" id="listSearchInput">
@@ -81,7 +87,8 @@
     <div id="charlie">
         <div class="screen" id="treeEditor">
             <div id="tasks_main_tree"></div>
-            <button class="addNewRootTask" onclick="tree.addTask('', 'pending');renderTasks(tree, document.getElementById('tasks_main_tree'))">
+            <button class="addNewRootTask"
+                onclick="tree.addTask('', 'pending');renderTasks(tree, document.getElementById('tasks_main_tree'))">
                 <div class="icn">add</div>
                 <span>Add task</span>
             </button>
@@ -89,25 +96,18 @@
         <div class="screen left" id="listsGrid">
             <div class="headerBanner">
                 <h1>Welcome back!</h1>
-                <p id="BannerStatusText">You have 27 open lists (304 tasks): 95% completed. Keep grinding!</p>
+                <p id="BannerStatusText">You have 0 open lists, 0% completed. Keep grinding!</p>
             </div>
             <div class="listlistCont">
                 <div class="label">All lists</div>
-                 <div id="listsList">
-                <div class="singList" onclick="switchScreens('treeEditor')">
-                    <div class="statusicn"></div>
-                    <div class="title">Untitled List (1)</div>
-                    <div class="seperator"></div>
-                    <div class="icn moreOptions">
-                        more_vert
-                    </div>
+                <div id="listsList">
                 </div>
             </div>
-            </div>
-           
+
         </div>
     </div>
-    <script src="script.js" async defer></script>
+    <script src="IDBKV.js"></script>
+    <script src="script.js" defer></script>
 </body>
 
 </html>

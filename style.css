@@ -276,6 +276,7 @@ textarea::placeholder {
     gap: .5em;
     transition: .2s;
     padding: .5em;
+    position: relative;
 
     &>.task_expand {
         transition: .3s;
@@ -354,6 +355,21 @@ textarea::placeholder {
     }
 }
 
+.del_task_btn {
+    background: var(--col-bg2);
+    border: var(--box-crisp);
+    width: fit-content;
+    display: flex;
+    padding: .3em;
+    gap: .5em;
+    border-radius: 1em;
+    margin-left: .8em;
+    position: absolute;
+    right: -3.4em;
+    top: 23px;
+    transition: .5s;
+}
+
 .new_task_btn {
     background: var(--col-bg2);
     border: var(--box-crisp);
@@ -426,6 +442,12 @@ textarea::placeholder {
     flex: 1;
 }
 
+.divider {
+    margin: 0 .5em;
+    width: 1px;
+    background-color: #7676762c;
+}
+
 input[type="text"] {
     background-color: transparent;
     color: inherit;
@@ -434,6 +456,12 @@ input[type="text"] {
     outline: 0;
     border: 0;
     min-width: 0;
+}
+
+.vert {
+    flex-direction: column;
+    align-items: left;
+    justify-content: left;
 }
 
 .nav .group {
@@ -542,23 +570,34 @@ input[type="text"] {
     inset: 0;
     display: flex;
     flex-direction: column;
-    transform: translateX(100%);
-    transition: transform 300ms ease;
+    transform: translateY(1em);
+    opacity: 0;
+    pointer-events: none;
+    transition:
+        transform .3s cubic-bezier(0.1, 1.07, 1, 1),
+        opacity .25s ease;
     top: 60px;
+    background-color: var(--col-bg1);
 }
 
 .screen.active {
-    transform: translateX(0);
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
     z-index: 2;
 }
 
 .screen.left {
-    transform: translateX(-100%);
+    transform: translateY(1em);
+    opacity: 0;
+    pointer-events: none;
     z-index: 1;
 }
 
+
 .headerBanner {
-    background-image: url(https://cdn.pixabay.com/video/2022/06/14/120281-720504960_tiny.jpg);
+    background-image: url(https://wallpapercat.com/w/full/b/a/9/1209998-3840x2160-desktop-4k-glow-in-the-dark-background-photo.jpg);
+    background-position: 50% 85%;
     padding: 1em;
     border-radius: 1em;
     margin: 0 1em;
@@ -597,11 +636,24 @@ input[type="text"] {
 .singList {
     display: flex;
     flex-direction: row;
-    justify-content: space-between;
     padding: .8em;
     background: var(--col-bg2);
     border-radius: .5em;
     align-items: center;
+    margin-bottom: .5em;
+    gap: .5em;
+    justify-content: center;
+    font-size: 1.2em;
+
+    &>.statusicn {
+        display: inherit;
+
+        &>svg {
+            width: 25px;
+            height: auto;
+            aspect-ratio: 1 / 1;
+        }
+    }
 }
 
 button.addNewRootTask {
@@ -612,12 +664,38 @@ button.addNewRootTask {
     margin: 1em;
     display: flex;
     align-items: center;
-        color: var(--col-txt1);
-        background: var(--col-bg2);
+    color: var(--col-txt1);
+    background: var(--col-bg2);
     gap: .5em;
 
     &:hover {
         color: var(--col-txth);
         background: var(--col-bgh);
+    }
+}
+
+#file_actions {
+    flex: 1;
+}
+
+.progressbarCont {
+    justify-content: center;
+
+    &>.label {
+        font-size: 14px;
+    }
+}
+
+.progressbar {
+    height: 5px;
+    width: 100px;
+    background-color: grey;
+    border-radius: 1em;
+    overflow: hidden;
+
+    &>.progressbarline {
+        min-width: 5px;
+        height: 5px;
+        background-color: #5be45b;
     }
 }
