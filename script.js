@@ -70,6 +70,8 @@ function renderTasks(tree, container) {
     container.innerHTML = ""
     tree.getRoots().forEach(t => renderTask(tree, t, container, 0))
 }
+
+
 function renderTask(tree, task, container, depth, parentId = "", hidden = false) {
 
     function toggleChildren(parentId, hide) {
@@ -100,34 +102,34 @@ function renderTask(tree, task, container, depth, parentId = "", hidden = false)
 
             if (hide || blocked) {
                 if (row.style.display === "none") continue
+                // hide
                 row.style.overflowY = "hidden"
                 const h = row.scrollHeight
                 row.style.height = h + "px"
                 row.offsetHeight
                 row.style.height = "0px"
-                row.addEventListener("transitionend", function t(e) {
-                    if (e.propertyName === "height") {
-                        row.style.display = "none"
-                        row.style.height = ""
-                        row.style.overflowY = ""
-                        row.removeEventListener("transitionend", t)
-                    }
-                })
+                row.style.marginBottom = "0"
+                row.style.transition = ".25s  cubic-bezier(0.075, 0.82, 0.165, 1)"
+                setTimeout(() => {
+                    row.style.display = "none"
+                    row.style.opacity = "0"
+                }, 250)
             } else {
                 if (row.style.display !== "none") continue
+                // show
                 row.style.display = ""
                 row.style.overflowY = "hidden"
                 row.style.height = "0px"
                 const h = row.scrollHeight
                 row.offsetHeight
                 row.style.height = h + "px"
-                row.addEventListener("transitionend", function t(e) {
-                    if (e.propertyName === "height") {
-                        row.style.height = ""
-                        row.style.overflowY = ""
-                        row.removeEventListener("transitionend", t)
-                    }
-                })
+                row.style.marginBottom = ".5em"
+                row.style.transition = ""
+                setTimeout(() => {
+                    row.style.height = ""
+                    row.style.opacity = "1"
+                    row.style.overflowY = ""
+                }, 250)
             }
         }
     }
@@ -186,17 +188,14 @@ function renderTask(tree, task, container, depth, parentId = "", hidden = false)
         input.blur();
 
         const clone = inner.cloneNode(true)
-        clone.style.position = "absolute"
-        clone.style.top = "-9999px"
-        clone.style.left = "-9999px"
-        clone.style.boxShadow = "0 0 10px #000000ab"
-        clone.style.transform = "rotate(30deg)"
+        clone.style.position = "fixed"
+        clone.style.top = "-1000px"
+        clone.style.left = "-1000px"
+        clone.style.pointerEvents = "none"
         document.body.appendChild(clone)
         e.dataTransfer.setDragImage(clone, clone.offsetWidth / 2, clone.offsetHeight / 2)
         setTimeout(() => document.body.removeChild(clone), 0)
 
-
-        setTimeout(() => document.body.removeChild(clone), 0)
     })
 
     inner.addEventListener("dragend", () => {
@@ -206,7 +205,6 @@ function renderTask(tree, task, container, depth, parentId = "", hidden = false)
         input.contentEditable = "true"
         input.style.userSelect = "auto"
     })
-
 
     inner.addEventListener("dragover", e => {
         e.preventDefault()
@@ -242,7 +240,6 @@ function renderTask(tree, task, container, depth, parentId = "", hidden = false)
     input.innerText = task.data
     const initialHeight = input.style.height
     input.oninput = () => tree.update(task.taskid, "data", input.innerText)
-
     input.addEventListener("focus", () => {
         input.classList.add("focus")
         input.style.height = "auto"
@@ -260,6 +257,14 @@ function renderTask(tree, task, container, depth, parentId = "", hidden = false)
         const sel = window.getSelection()
         sel.removeAllRanges()
     })
+
+    let inputFocused = 0;
+    if (task.data.length == 0) {
+        setTimeout(() => {
+            if (!inputFocused)
+                input.focus()
+        }, 50)
+    }
 
     data.appendChild(input)
 
@@ -347,52 +352,33 @@ function taskTreeToJSON(tree) {
     }
 }
 
-const tree = taskTreeFromJSON({
-    "tasks": [
-        {
-            "taskid": "a1",
-            "data": "Plan weekend",
-            "status": "pending",
-            "children": ["a2", "a3"]
-        },
-        {
-            "taskid": "a2",
-            "data": "Buy groceries",
-            "status": "done",
-            "children": ["a4", "a5"]
-        },
-        {
-            "taskid": "a3",
-            "data": "Fix bike",
-            "status": "pending",
-            "children": []
-        },
-        {
-            "taskid": "a4",
-            "data": "Milk and eggs",
-            "status": "done",
-            "children": []
-        },
-        {
-            "taskid": "a5",
-            "data": "Coffee beans",
-            "status": "pending",
-            "children": []
-        },
-        {
-            "taskid": "b1",
-            "data": "Learn something new",
-            "status": "pending",
-            "children": ["b2"]
-        },
-        {
-            "taskid": "b2",
-            "data": "Read about astrophysics",
-            "status": "pending",
-            "children": []
+function randomTaskTree(maxDepth = 5, maxChildren = 4, idPrefix = "t") {
+    let counter = 1;
+    const nodes = [];
+
+    function createNode(depth) {
+        const taskid = idPrefix + counter++;
+        const status = Math.random() < 0.5 ? "pending" : "done";
+        const children = [];
+        const childrenCount = depth < maxDepth ? Math.floor(Math.random() * (maxChildren + 1)) : 0;
+        for (let i = 0; i < childrenCount; i++) {
+            const child = createNode(depth + 1);
+            children.push(child.taskid);
         }
-    ]
-})
+        const node = { taskid, data: `Task ${taskid}`, status, children };
+        nodes.push(node);
+        return node;
+    }
+
+    const rootsCount = Math.floor(Math.random() * 3) + 1;
+    for (let i = 0; i < rootsCount; i++) createNode(1);
+
+    return { tasks: nodes };
+}
+
+const tree = taskTreeFromJSON(randomTaskTree());
+console.log(tree);
+
 renderTasks(tree, document.getElementById("tasks_main_tree"))
 
 function isDescendant(tree, id, target) {
@@ -403,3 +389,34 @@ function isDescendant(tree, id, target) {
     return false
 }
 
+var eleObjs = {
+    allWinCont: document.querySelector("#charlie")
+}
+let currentScreen = null;
+function switchScreens(screen) {
+    if (screen == currentScreen) return;
+    currentScreen = screen;
+    const screens = [...eleObjs.allWinCont.querySelectorAll(".screen")]
+    const next = eleObjs.allWinCont.querySelector(`#${screen}.screen`)
+    const current = screens.find(s => s.classList.contains("active"))
+
+    if (current && current !== next) {
+        current.classList.remove("active")
+        current.classList.add("left")
+    }
+
+    screens.forEach(s => {
+        if (s !== next && s !== current) {
+            s.classList.remove("active", "left")
+        }
+    })
+
+    next.classList.remove("left")
+    next.classList.add("active")
+
+    document.getElementById("listSearchInput").style.display = screen === "listsGrid" ? "flex" : "none"
+    document.getElementById("file_actions").style.display = screen === "listsGrid" ? "none" : "flex"
+}
+
+
+switchScreens("listsGrid")

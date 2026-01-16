@@ -21,69 +21,91 @@
             <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
         <![endif]-->
     <div class="nav">
-        <div class="logo">
+        <div class="logo" onclick="switchScreens('listsGrid')">
             <img src="assets/logo.png" alt="Logo">
         </div>
-        <div class="group">
-            <div class="btn dropdown">
-                <div class="label">
-                    <div>File</div>
-                    <div class="icn">keyboard_arrow_down</div>
-                </div>
-                <div class="dropdown_content">
-                    <div class="btn">
-                        <div class="label">New</div>
-                        <div class="icn">new_window</div>
+        <div id="file_actions">
+            <div class="group">
+                <div class="btn dropdown">
+                    <div class="label">
+                        <div>File</div>
+                        <div class="icn">keyboard_arrow_down</div>
                     </div>
-                    <div class="btn">
-                        <div class="label">Open</div>
-                        <div class="icn">open_in_new</div>
-                    </div>
-                    <div class="btn">
-                        <div class="label">Save As</div>
-                        <div class="icn">save_as</div>
-                    </div>
-                    <div class="btn">
-                        <div class="label">Export As</div>
-                        <div class="icn">download</div>
-                    </div>
-                </div>
-            </div>
-            <div class="btn dropdown">
-                <div class="label">
-                    <div>Edit</div>
-                    <div class="icn">keyboard_arrow_down</div>
-                </div>
-                <div class="dropdown_content">
-                    <div class="btn">
-                        <div class="label">Mark All Incomplete</div>
-                        <div class="icn">playlist_remove</div>
-                    </div>
-                    <div class="btn">
-                        <div class="label">Remove Completed</div>
-                        <div class="icn">done_all</div>
+                    <div class="dropdown_content">
+                        <div class="btn">
+                            <div class="label">New</div>
+                            <div class="icn">new_window</div>
+                        </div>
+                        <div class="btn">
+                            <div class="label">Open</div>
+                            <div class="icn">open_in_new</div>
+                        </div>
+                        <div class="btn">
+                            <div class="label">Save As</div>
+                            <div class="icn">save_as</div>
+                        </div>
+                        <div class="btn">
+                            <div class="label">Export As</div>
+                            <div class="icn">download</div>
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="btn dropdown">
-                <div class="label">
-                    <div>Edit</div>
-                    <div class="icn">keyboard_arrow_down</div>
-                </div>
-                <div class="dropdown_content">
-                    <div class="btn">
-                        Mark all as incomplete
+                <div class="btn dropdown">
+                    <div class="label">
+                        <div>Edit</div>
+                        <div class="icn">keyboard_arrow_down</div>
                     </div>
-                    <div class="btn">
-                        Remove completed
+                    <div class="dropdown_content">
+                        <div class="btn">
+                            <div class="label">Mark All Incomplete</div>
+                            <div class="icn">playlist_remove</div>
+                        </div>
+                        <div class="btn">
+                            <div class="label">Remove Completed</div>
+                            <div class="icn">done_all</div>
+                        </div>
                     </div>
                 </div>
-            </div>
 
+
+            </div>
+            <div class="group inputs" style="max-width: 300px;">
+                <input type="text" id="titleEditor" placeholder="Untitled">
+            </div>
+        </div>
+        <div class="group inputs" id="listSearchInput">
+            <input type="text" placeholder="Search lists..." id="listSearch">
+            <div class="icn">search</div>
         </div>
     </div>
-    <div id="tasks_main_tree">
-        
+    <div id="charlie">
+        <div class="screen" id="treeEditor">
+            <div id="tasks_main_tree"></div>
+            <button class="addNewRootTask" onclick="tree.addTask('', 'pending');renderTasks(tree, document.getElementById('tasks_main_tree'))">
+                <div class="icn">add</div>
+                <span>Add task</span>
+            </button>
+        </div>
+        <div class="screen left" id="listsGrid">
+            <div class="headerBanner">
+                <h1>Welcome back!</h1>
+                <p id="BannerStatusText">You have 27 open lists (304 tasks): 95% completed. Keep grinding!</p>
+            </div>
+            <div class="listlistCont">
+                <div class="label">All lists</div>
+                 <div id="listsList">
+                <div class="singList" onclick="switchScreens('treeEditor')">
+                    <div class="statusicn"></div>
+                    <div class="title">Untitled List (1)</div>
+                    <div class="seperator"></div>
+                    <div class="icn moreOptions">
+                        more_vert
+                    </div>
+                </div>
+            </div>
+            </div>
+           
+        </div>
     </div>
     <script src="script.js" async defer></script>
 </body>
