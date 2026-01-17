@@ -217,18 +217,6 @@ textarea::placeholder {
 
 /* tasks list */
 
-@keyframes ignite {
-    0% {
-        opacity: 0;
-        transform: translate(-5px, -5px);
-    }
-
-    100% {
-        opacity: 1;
-        transform: 0;
-    }
-}
-
 #tasks_main_tree {
     display: flex;
     height: fit-content;
@@ -243,7 +231,6 @@ textarea::placeholder {
     flex-direction: column;
     transition: .25s cubic-bezier(0.42, 1.67, 0.21, 0.90);
     margin-bottom: .5em;
-    animation: ignite .3s cubic-bezier(0.42, 1.67, 0.21, 0.90);
 
     &>.task_hir_line {
         background: grey;
@@ -687,7 +674,7 @@ input[type="text"] {
     }
 }
 
-.label {
+.labeldim {
         font-size: 1.2em;
         opacity: .5;
     }
@@ -813,6 +800,7 @@ button.addNewRootTask {
 
     & .fakeInput {
         opacity: .5;
+        pointer-events: none;
         text-decoration: line-through;
     }
 }

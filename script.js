@@ -1,30 +1,76 @@
 var tree, currentlyEditingListKey = null;
 const db = new IDBKV('OverthinkLocalRepo', 'lists');
-
 class TaskTree {
-    constructor() {
+    constructor(db, key) {
         this.tasks = []
         this.index = new Map()
         this.parents = new Map()
+        this.db = db
+        this.key = key
     }
 
-    _id() {
-        return crypto.randomUUID()
-    }
+    _id() { return crypto.randomUUID() }
 
-    _removeRef(id) { for (const t of this.tasks) { t.children = t.children.filter(c => c !== id) } }
+    _commit() {
+        const currenttreejson = JSON.stringify(taskTreeToJSON(this))
+        db.set(currentlyEditingListKey, currenttreejson)
+    }
 
     addTask(data = "", status = "pending", parentId = null) {
         const taskid = this._id()
-        const task = { taskid, data, status, children: [] }
+        const now = Date.now()
+        const task = { taskid, data, status, children: [], createdAt: now, updatedAt: now, completedAt: status === "done" ? now : null }
         this.tasks.push(task)
         this.index.set(taskid, task)
         if (parentId && this.index.has(parentId)) {
             this.index.get(parentId).children.push(taskid)
             this.parents.set(taskid, parentId)
         }
+        this._commit()
         return taskid
     }
+
+    update(taskid, key, value) {
+        const t = this.index.get(taskid)
+        if (!t || !(key in t)) return false
+        t[key] = value
+        t.updatedAt = Date.now()
+        if (key === "status" && value === "done") t.completedAt = t.updatedAt
+        this._commit()
+        return true
+    }
+
+    getStats() {
+        let total = this.tasks.length
+        let completed = 0
+        let lastCompleted = null
+        let lastAdded = null
+        let lastModified = null
+        let lastEdit = null
+
+        for (const t of this.tasks) {
+            if (t.status === "done") {
+                completed++
+                if (!lastCompleted || t.completedAt > lastCompleted.completedAt) {
+                    lastCompleted = { taskid: t.taskid, completedAt: t.completedAt }
+                }
+            }
+            if (!lastAdded || t.createdAt > lastAdded.createdAt) lastAdded = t
+            if (!lastModified || t.updatedAt > lastModified.updatedAt) lastModified = t
+        }
+
+        if (lastModified) lastEdit = { taskid: lastModified.taskid, updatedAt: lastModified.updatedAt }
+
+        return {
+            totalTasks: total,
+            completedTasks: completed,
+            lastCompletedTask: lastCompleted,
+            lastAddedTask: lastAdded ? { taskid: lastAdded.taskid, createdAt: lastAdded.createdAt } : null,
+            lastModified: lastModified ? lastModified.updatedAt : null,
+            lastEdit
+        }
+    }
+
 
     removeTask(taskid) {
         const task = this.index.get(taskid)
@@ -38,18 +84,8 @@ class TaskTree {
         this.parents.delete(taskid)
         this.index.delete(taskid)
         this.tasks = this.tasks.filter(t => t.taskid !== taskid)
+        this._commit()
         return true
-    }
-
-    update(taskid, key, value) {
-        const t = this.index.get(taskid)
-        if (!t || !(key in t)) return false
-        t[key] = value
-        return true
-    }
-
-    getRoots() {
-        return this.tasks.filter(t => !this.parents.has(t.taskid))
     }
 
     moveTaskIdToNewParentTaskId(taskid, newParentId = null) {
@@ -64,18 +100,18 @@ class TaskTree {
             this.index.get(newParentId).children.push(taskid)
             this.parents.set(taskid, newParentId)
         }
+        this._commit()
         return true
     }
 
+    getRoots() { return this.tasks.filter(t => !this.parents.has(t.taskid)) }
+
     getTaskById(taskid) { return this.index.get(taskid) || null }
 }
+
 let nodeCache = new Map()
 
 function renderTasks(tree, container) {
-    if (db && tree && currentlyEditingListKey) {
-        let currenttreejson = JSON.stringify(taskTreeToJSON(tree));
-        db.set(currentlyEditingListKey, currenttreejson)
-    }
     const used = new Set()
     const roots = tree.getRoots()
 
@@ -92,65 +128,15 @@ function renderTasks(tree, container) {
 }
 
 function renderTask(tree, task, container, depth, parentId, hidden, used) {
+    let isDone = task.status === "done"
 
-    function toggleChildren(parentId, hide) {
-        const rows = [...container.querySelectorAll(".ind_task")]
-        let active = false
-
-        for (const row of rows) {
-            if (row.dataset.taskid === String(parentId)) {
-                active = true
-                continue
-            }
-            if (!active) continue
-            if (!row.dataset.parent) break
-
-            let p = row.dataset.parent
-            let isDescendant = false
-            let blocked = false
-
-            while (p) {
-                if (p === String(parentId)) isDescendant = true
-                const t = tree.getTaskById(p)
-                if (t && t.collapsed && p !== parentId) blocked = true
-                const el = container.querySelector(`[data-taskid="${p}"]`)
-                p = el ? el.dataset.parent : ""
-            }
-
-            if (!isDescendant) break
-
-            if (hide || blocked) {
-                if (row.style.display === "none") continue
-                // hide
-                row.style.overflowY = "hidden"
-                const h = row.scrollHeight
-                row.style.height = h + "px"
-                row.offsetHeight
-                row.style.height = "0px"
-                row.style.marginBottom = "0"
-                row.style.transition = ".25s  cubic-bezier(0.075, 0.82, 0.165, 1)"
-                setTimeout(() => {
-                    row.style.display = "none"
-                    row.style.opacity = "0"
-                }, 250)
-            } else {
-                if (row.style.display !== "none") continue
-                // show
-                row.style.display = ""
-                row.style.overflowY = "hidden"
-                row.style.height = "0px"
-                const h = row.scrollHeight
-                row.offsetHeight
-                row.style.height = h + "px"
-                row.style.marginBottom = ".5em"
-                row.style.transition = ""
-                setTimeout(() => {
-                    row.style.height = ""
-                    row.style.opacity = "1"
-                    row.style.overflowY = ""
-                }, 250)
-            }
+    if (task.children?.length) {
+        let done = 0
+        for (const id of task.children) {
+            const c = tree.getTaskById(id)
+            if (c && c.status === "done") done++
         }
+        isDone = done === task.children.length
     }
 
     let wrap = nodeCache.get(task.taskid)
@@ -159,12 +145,13 @@ function renderTask(tree, task, container, depth, parentId, hidden, used) {
         wrap = createWrap(task, parentId, hidden)
         wrap._inner = createInner(depth, task)
         wrap._expand = createExpand(tree, task, container)
-        wrap._data = createData(tree, task)
-        wrap._toggle = createCompletionToggle(tree, task, container, wrap._inner)
+        let dataRem = createData(tree, task);
+        wrap._data = dataRem[0];
+        wrap._toggle = createCompletionToggle(tree, task, container, wrap)
         wrap._addBtn = createAddButton(tree, task, depth, container)
         wrap._delBtn = createDeleteButton(tree, task, container)
 
-        attachDragHandlers(wrap._inner, tree, task, wrap._expand, container)
+        attachDragHandlers(wrap._inner, tree, task, wrap._expand, container, dataRem[1].input)
 
         wrap._inner.append(wrap._expand || "", wrap._data, wrap._toggle, wrap._delBtn)
         wrap.append(wrap._inner, wrap._addBtn)
@@ -174,29 +161,77 @@ function renderTask(tree, task, container, depth, parentId, hidden, used) {
     used.add(task.taskid)
 
     wrap.dataset.parent = parentId || ""
-    wrap.style.display = hidden ? "none" : ""
 
     updateHierarchyLines(wrap, depth)
     updateInnerLayout(wrap._inner, depth)
     updateExpandState(wrap._expand, task)
     updateData(wrap._data, tree, task)
     updateAddButton(wrap._addBtn, depth)
+    updateCompletionToggle(wrap._toggle, isDone)
+    wrap._inner.classList.toggle("done", isDone)
+
 
     container.appendChild(wrap)
 
     for (const id of task.children) {
         const child = tree.getTaskById(id)
         if (child) {
-            renderTask(tree, child, container, depth + 1, task.taskid, hidden || task.collapsed, used)
+            renderTask(tree, child, container, depth + 1, task.taskid, false, used)
         }
-    }
-
-    if (task.collapsed && !hidden) {
-        toggleChildren(tree, container, task.taskid, true)
     }
 
     return wrap
 }
+function toggleChildren(tree, container, parentId, hide) {
+    const rows = [...container.querySelectorAll(".ind_task")]
+    let active = false
+
+    for (const row of rows) {
+        if (row.dataset.taskid === String(parentId)) {
+            active = true
+            continue
+        }
+        if (!active) continue
+        if (!row.dataset.parent) continue
+
+        let p = row.dataset.parent
+        let isDescendant = false
+
+        while (p) {
+            if (p === String(parentId)) {
+                isDescendant = true
+                break
+            }
+            const el = container.querySelector(`[data-taskid="${p}"]`)
+            p = el ? el.dataset.parent : ""
+        }
+
+        if (!isDescendant) continue
+
+        row.style.display = hide ? "none" : ""
+    }
+}
+
+function createExpand(tree, task, container) {
+    if (!task.children.length) return null
+    const expand = document.createElement("div")
+    expand.className = "icn task_expand"
+    expand.textContent = "chevron_right"
+    expand.style.transform = task.collapsed ? "rotate(0deg)" : "rotate(90deg)"
+    expand.onclick = e => {
+        e.stopPropagation()
+        task.collapsed = !task.collapsed
+        if (task.collapsed) {
+            expand.style.transform = "rotate(0deg)";
+        } else {
+            expand.style.transform = "rotate(90deg)";
+        }
+        toggleChildren(tree, container, task.taskid, task.collapsed)
+    }
+    return expand
+}
+
+
 
 function updateHierarchyLines(wrap, depth) {
     const lines = wrap.querySelectorAll(".task_hir_line")
@@ -221,15 +256,25 @@ function updateExpandState(expand, task) {
     if (!expand) return
     expand.style.transform = task.collapsed ? "rotate(0deg)" : "rotate(90deg)"
 }
-
 function updateData(data, tree, task) {
     const input = data._input
     if (document.activeElement !== input && input.innerText !== task.data) {
         input.innerText = task.data
     }
 
-    data._meta.textContent =
-        task.children?.length ? `${task.children.length} subtasks • Pending` : task.status
+    let status = task.status
+
+    if (task.children?.length) {
+        let done = 0
+        for (const id of task.children) {
+            const c = tree.getTaskById(id)
+            if (c && c.status === "done") done++
+        }
+        status = done === task.children.length ? "done" : "pending"
+        data._meta.textContent = `${done}/${task.children.length} done`
+    } else {
+        data._meta.textContent = status
+    }
 
     if (task.data.length === 0 && !input._autofocus) {
         input._autofocus = true
@@ -237,8 +282,14 @@ function updateData(data, tree, task) {
     }
 }
 
+
 function updateAddButton(btn, depth) {
     btn.style.marginLeft = depth * 4 + "em"
+}
+
+function updateCompletionToggle(toggle, isDone) {
+    toggle.textContent = isDone ? "undo" : "check"
+    toggle.classList.toggle("done", isDone)
 }
 
 function createWrap(task, parentId, hidden) {
@@ -271,31 +322,24 @@ function createInner(depth, task) {
     return inner
 }
 
-function createExpand(tree, task, container) {
-    if (!task.children.length) return null
-    const expand = document.createElement("div")
-    expand.className = "icn task_expand"
-    expand.textContent = "chevron_right"
-    expand.style.transform = task.collapsed ? "rotate(0deg)" : "rotate(90deg)"
-    expand.onclick = e => {
-        e.stopPropagation()
-        task.collapsed = !task.collapsed
-        if (task.collapsed) {
-            expand.style.transform = "rotate(0deg)";
-        } else {
-            expand.style.transform = "rotate(90deg)";
-        }
-        toggleChildren(tree, container, task.taskid, task.collapsed)
-    }
-    return expand
+
+function disableInput(input) {
+    input.contentEditable = "false"
+    input.style.userSelect = "none"
+    input.blur()
 }
 
-function attachDragHandlers(inner, tree, task, expand, container) {
+function enableInput(input) {
+    input.contentEditable = "true"
+    input.style.userSelect = "auto"
+}
+
+function attachDragHandlers(inner, tree, task, expand, container, input) {
     inner.addEventListener("dragstart", e => {
         if (!task.collapsed) expand?.click()
         e.dataTransfer.setData("text/plain", task.taskid)
         inner.style.opacity = ".5"
-        disableInput()
+        disableInput(input)
 
         const clone = inner.cloneNode(true)
         clone.style.position = "fixed"
@@ -308,7 +352,7 @@ function attachDragHandlers(inner, tree, task, expand, container) {
     inner.addEventListener("dragend", () => {
         inner.style.opacity = "1"
         inner.classList.remove("drag_over")
-        enableInput()
+        enableInput(input)
     })
 
     inner.addEventListener("dragover", e => {
@@ -371,21 +415,35 @@ function createData(tree, task) {
     data._meta = meta
     data.appendChild(meta)
 
-    return data
+    return [data, { input }]
 }
 
 function createCompletionToggle(tree, task, container, wrap) {
     const toggle = document.createElement("div")
     toggle.className = "completion_toggle icn"
-    toggle.textContent = "check";
+
     toggle.onclick = async () => {
-        let currentStatus = task.status;
-        const isDone = currentStatus === "done";
-        await tree.update(task.taskid, "status", isDone ? "pending" : "done");
-        wrap.classList.toggle("done", !isDone);
+        if (task.children?.length) {
+            let done = 0
+            for (const id of task.children) {
+                const c = tree.getTaskById(id)
+                if (c && c.status === "done") done++
+            }
+            const markDone = done !== task.children.length
+            for (const id of task.children) {
+                const c = tree.getTaskById(id)
+                if (c) {
+                    await tree.update(c.taskid, "status", markDone ? "done" : "pending")
+                }
+            }
+        } else {
+            const isDone = task.status === "done"
+            await tree.update(task.taskid, "status", isDone ? "pending" : "done")
+        }
 
         renderTasks(tree, container)
     }
+
     return toggle
 }
 
@@ -452,59 +510,6 @@ function toggleAncestorHover(e, on) {
         const pid = row.dataset.parent
         row = pid ? document.querySelector(`[data-taskid="${pid}"]`) : null
     }
-}
-
-function toggleChildren(tree, container, parentId, hide) {
-    const rows = [...container.querySelectorAll(".ind_task")]
-    let active = false
-
-    for (const row of rows) {
-        if (row.dataset.taskid === String(parentId)) {
-            active = true
-            continue
-        }
-        if (!active || !row.dataset.parent) break
-
-        let p = row.dataset.parent
-        let isDescendant = false
-        let blocked = false
-
-        while (p) {
-            if (p === String(parentId)) isDescendant = true
-            const t = tree.getTaskById(p)
-            if (t && t.collapsed && p !== parentId) blocked = true
-            const el = container.querySelector(`[data-taskid="${p}"]`)
-            p = el ? el.dataset.parent : ""
-        }
-
-        if (!isDescendant) break
-
-        if (hide || blocked) {
-            if (row.style.display === "none") continue
-            row.style.height = row.scrollHeight + "px"
-            row.offsetHeight
-            row.style.height = "0px"
-            setTimeout(() => row.style.display = "none", 250)
-        } else {
-            if (row.style.display !== "none") continue
-            row.style.display = ""
-            row.style.height = "0px"
-            row.offsetHeight
-            row.style.height = row.scrollHeight + "px"
-            setTimeout(() => row.style.height = "", 250)
-        }
-    }
-}
-
-function disableInput() {
-    input.contentEditable = "false"
-    input.style.userSelect = "none"
-    input.blur()
-}
-
-function enableInput() {
-    input.contentEditable = "true"
-    input.style.userSelect = "auto"
 }
 
 function createTaskInput(tree, task) {
@@ -590,6 +595,9 @@ function switchScreens(screen) {
     const next = eleObjs.allWinCont.querySelector(`#${screen}.screen`)
     const current = screens.find(s => s.classList.contains("active"))
 
+    if (screen === "listsGrid")
+        renderLists();
+
     if (current && current !== next) {
         current.classList.remove("active")
         current.classList.add("left")
@@ -600,6 +608,7 @@ function switchScreens(screen) {
             s.classList.remove("active", "left")
         }
     })
+
 
     next.classList.remove("left")
     next.offsetHeight
@@ -656,7 +665,7 @@ async function renderLists() {
         document.getElementById("statdisplay").style.opacity = "0";
         return;
     }
-        document.getElementById("statdisplay").style.opacity = "1";
+    document.getElementById("statdisplay").style.opacity = "1";
 
     clearTimeout(loadingTimer);
 
