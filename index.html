@@ -74,12 +74,12 @@
                     <div class="progressbarline" id="in_file_completition_bar"></div>
                 </div>
             </div>
-            <div class="divider"></div>
-            <div class="group">
-                <a href="#" onclick="window.open(window.location.href, '_blank'); window.close();">Auto SPA switch</a>
-            </div>
         </div>
         <div class="group inputs" id="listSearchInput">
+
+            <div class="newListBtn" onclick="UInewEmptyList();">
+                <div class="icn">add</div>
+            </div>
             <input type="text" placeholder="Search lists..." id="listSearch">
             <div class="icn">search</div>
         </div>
@@ -98,10 +98,10 @@
             <div class="listlistCont">
                 <div class="headerBanner">
                     <div>
-                        <h1>Welcome back!</h1>
+                        <h1 id="welcomeheading">Welcome back!</h1>
                         <p id="BannerStatusText">You have 0 open lists, 0% completed. Keep grinding!</p>
                     </div>
-                    <div class="stats">
+                    <div class="stats" id="statdisplay">
                         <span><b data-need="totalDone">100</b> total tasks done,</span>
                         <span><b data-need="totalDoneToday">20</b> done today.</span>
                         <span>That's <b data-need="totalDoneToday">3 less</b> than usual.</span>
@@ -113,14 +113,20 @@
                 <div class="listsnav">
                     <div class="label">All lists</div>
                     <div class="viewctrls">
-                        <div class="icn">grid_view</div>
-                        <div class="icn selected">density_medium</div>
+                        <div class="icn" onclick="switchlistview('grid')">grid_view</div>
+                        <div class="icn selected" onclick="switchlistview('list')">density_medium</div>
                     </div>
                 </div>
                 <div id="listsList">
                 </div>
             </div>
 
+        </div>
+    </div>
+    <div id="listManageDropdown" class="dropdown_content">
+        <div class="btn" data-todo="delete">
+            <div class="label">Delete</div>
+            <div class="icn">delete</div>
         </div>
     </div>
     <script src="IDBKV.js"></script>

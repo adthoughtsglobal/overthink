@@ -1,3 +1,6 @@
+var tree, currentlyEditingListKey = null;
+const db = new IDBKV('OverthinkLocalRepo', 'lists');
+
 class TaskTree {
     constructor() {
         this.tasks = []
@@ -66,9 +69,13 @@ class TaskTree {
 
     getTaskById(taskid) { return this.index.get(taskid) || null }
 }
-const nodeCache = new Map()
+let nodeCache = new Map()
 
 function renderTasks(tree, container) {
+    if (db && tree && currentlyEditingListKey) {
+        let currenttreejson = JSON.stringify(taskTreeToJSON(tree));
+        db.set(currentlyEditingListKey, currenttreejson)
+    }
     const used = new Set()
     const roots = tree.getRoots()
 
@@ -150,10 +157,10 @@ function renderTask(tree, task, container, depth, parentId, hidden, used) {
 
     if (!wrap) {
         wrap = createWrap(task, parentId, hidden)
-        wrap._inner = createInner(depth)
+        wrap._inner = createInner(depth, task)
         wrap._expand = createExpand(tree, task, container)
         wrap._data = createData(tree, task)
-        wrap._toggle = createCompletionToggle()
+        wrap._toggle = createCompletionToggle(tree, task, container, wrap._inner)
         wrap._addBtn = createAddButton(tree, task, depth, container)
         wrap._delBtn = createDeleteButton(tree, task, container)
 
@@ -222,7 +229,7 @@ function updateData(data, tree, task) {
     }
 
     data._meta.textContent =
-        task.children?.length ? `${task.children.length} subtasks • Pending` : "Pending"
+        task.children?.length ? `${task.children.length} subtasks • Pending` : task.status
 
     if (task.data.length === 0 && !input._autofocus) {
         input._autofocus = true
@@ -252,11 +259,15 @@ function addHierarchyLines(wrap, depth) {
     }
 }
 
-function createInner(depth) {
+function createInner(depth, task) {
     const inner = document.createElement("div")
     inner.className = "task_inner"
     inner.style.marginLeft = depth * 4 + "em"
     inner.draggable = true
+
+    let currentStatus = task.status;
+    const isDone = currentStatus === "done";
+    inner.classList.toggle("done", isDone);
     return inner
 }
 
@@ -268,12 +279,12 @@ function createExpand(tree, task, container) {
     expand.style.transform = task.collapsed ? "rotate(0deg)" : "rotate(90deg)"
     expand.onclick = e => {
         e.stopPropagation()
-            task.collapsed = !task.collapsed
-            if (task.collapsed) {
-                expand.style.transform = "rotate(0deg)";
-            } else {
-                expand.style.transform = "rotate(90deg)";
-            }
+        task.collapsed = !task.collapsed
+        if (task.collapsed) {
+            expand.style.transform = "rotate(0deg)";
+        } else {
+            expand.style.transform = "rotate(90deg)";
+        }
         toggleChildren(tree, container, task.taskid, task.collapsed)
     }
     return expand
@@ -363,10 +374,18 @@ function createData(tree, task) {
     return data
 }
 
-function createCompletionToggle() {
+function createCompletionToggle(tree, task, container, wrap) {
     const toggle = document.createElement("div")
     toggle.className = "completion_toggle icn"
-    toggle.textContent = "check"
+    toggle.textContent = "check";
+    toggle.onclick = async () => {
+        let currentStatus = task.status;
+        const isDone = currentStatus === "done";
+        await tree.update(task.taskid, "status", isDone ? "pending" : "done");
+        wrap.classList.toggle("done", !isDone);
+
+        renderTasks(tree, container)
+    }
     return toggle
 }
 
@@ -530,7 +549,7 @@ function updateTaskInput(input, task) {
 
 
 function taskTreeFromJSON(json) {
-    const tree = new TaskTree()
+    tree = new TaskTree()
     for (const t of json.tasks) {
         tree.tasks.push(t)
         tree.index.set(t.taskid, t)
@@ -614,43 +633,164 @@ function progressPieSVG(percent, size = 100, stroke = 10) {
 
 switchScreens("listsGrid");
 
-const db = new IDBKV('OverthinkLocalRepo', 'lists');
-
-document.addEventListener("DOMContentLoaded", async () => {
-    const keys = await db.keys();
-    if (!keys.length) {
-        await db.set(crypto.randomUUID(), '{"tasks":[{"taskid":"t1","data":"Hello","status":"done","children":["1b020355-0700-4cc4-9eb8-ff8d970abdfe"]},{"taskid":"t2","data":"world","status":"done","children":["8dd11219-56e6-4d1e-bffa-6ac621c9a344"]},{"taskid":"1b020355-0700-4cc4-9eb8-ff8d970abdfe","data":"the first thing to be said on a phone?","status":"pending","children":[]},{"taskid":"8dd11219-56e6-4d1e-bffa-6ac621c9a344","data":"simulation or real life?","status":"pending","children":[]}]}');
-    }
-    keys.forEach(item => {
-        const element = document.createElement("div");
-        element.classList.add("singList");
-        element.onclick = async () => {
-            switchScreens('treeEditor');
-            renderTasks(taskTreeFromJSON(JSON.parse(await db.get(item))), document.getElementById("tasks_main_tree"))
+let dblistkeys;
+async function renderLists() {
+    const root = eleObjs.listsList;
+    let loadingTimer = setTimeout(() => {
+        if (!root.childNodes.length) {
+            const s = document.createElement("span");
+            s.className = "awaittext";
+            s.textContent = "Loading...";
+            root.replaceChildren(s);
         }
-        const statusIcon = document.createElement('div');
-        statusIcon.className = 'statusicn';
-        statusIcon.innerHTML = progressPieSVG(0);
+    }, 1000);
 
-        const title = document.createElement('div');
-        title.className = 'title';
-        title.textContent = item;
+    let keys = await db.keys();
+    if (!keys.length) {
+        const s = document.createElement("span");
+        s.className = "awaittext";
+        s.textContent = "Click + to make your first list!";
+        root.replaceChildren(s);
+        keys = await db.keys();
+        document.getElementById("welcomeheading").innerText = "Welcome to Overthink!";
+        document.getElementById("statdisplay").style.opacity = "0";
+        return;
+    }
+        document.getElementById("statdisplay").style.opacity = "1";
 
-        const separator = document.createElement('div');
-        separator.className = 'seperator';
+    clearTimeout(loadingTimer);
 
-        const moreOptions = document.createElement('div');
-        moreOptions.className = 'icn moreOptions';
-        moreOptions.textContent = 'more_vert';
+    const existing = new Map(
+        [...root.children].map(n => [n.dataset.key, n])
+    );
 
-        element.append(statusIcon, title, separator, moreOptions);
+    const frag = document.createDocumentFragment();
 
-        eleObjs.listsList.appendChild(element)
+    keys.forEach(key => {
+        let el = existing.get(key);
+        if (!el) {
+            el = document.createElement("div");
+            el.className = "singList dropdown";
+            el.dataset.key = key;
+
+            const statusIcon = document.createElement("div");
+            statusIcon.className = "statusicn";
+            statusIcon.innerHTML = progressPieSVG(0);
+
+            const title = document.createElement("div");
+            title.className = "title";
+
+            const separator = document.createElement("div");
+            separator.className = "seperator";
+
+            const moreOptions = document.createElement("div");
+            moreOptions.className = "icn moreOptions";
+            moreOptions.textContent = "more_vert";
+            moreOptions.onclick = (event) => {
+                event.stopPropagation()
+                event.preventDefault();
+                createDropDownMenu(moreOptions)
+            }
+
+            el.append(statusIcon, title, separator, moreOptions);
+
+            el.onclick = async () => {
+                loadUpList(key)
+            };
+        }
+
+        const title = el.querySelector(".title");
+        if (title.textContent !== key) title.textContent = key;
+
+        frag.appendChild(el);
+        existing.delete(key);
     });
 
-    let bannerText = "Up next: <b>" + keys[0] + "</b>";
-    if (keys.length > 1) {
-        bannerText = `You have ${keys.length} open lists.`
+    existing.forEach(n => n.remove());
+    root.appendChild(frag);
+
+    dblistkeys = keys;
+}
+
+async function loadUpList(key) {
+    switchScreens("treeEditor");
+    currentlyEditingListKey = key;
+
+    nodeCache.forEach(el => el.remove())
+    nodeCache.clear()
+
+    renderTasks(
+        taskTreeFromJSON(JSON.parse(await db.get(key))),
+        document.getElementById("tasks_main_tree")
+    );
+}
+
+document.addEventListener("DOMContentLoaded", async () => {
+    await renderLists();
+    let bannerText = "This is the homepage, where all your future lists live.";
+    if (dblistkeys) {
+        bannerText = "Up next: <b>" + dblistkeys[0] + "</b>";
+        if (dblistkeys.length > 1) {
+            bannerText = `You have ${dblistkeys.length} open lists.`
+        }
     }
     document.getElementById("BannerStatusText").innerHTML = bannerText;
 })
+
+function switchlistview(newview) {
+    document.getElementById("listsList").className = newview;
+    renderLists();
+}
+
+async function newEmptyList() {
+    let x = crypto.randomUUID();
+    await db.set(x, '{"tasks":[{"taskid":"t1","data":"Hello","status":"pending", "children": []}]}');
+    return x;
+}
+
+let elementcache = null;
+function createDropDownMenu(element) {
+    var dropdown = document.getElementById("listManageDropdown");
+    if (elementcache === element) {
+        elementcache = null;
+        element.classList.remove("active");
+        dropdown.style.display = "none";
+        return;
+    }
+
+    var rect = element.getBoundingClientRect();
+    dropdown.style.position = "absolute";
+    dropdown.style.left = rect.left + window.scrollX - 115 + "px";
+    dropdown.style.top = rect.top + window.scrollY + 45 + "px";
+    dropdown.style.display = "block";
+    element.classList.add("active");
+    elementcache = element;
+
+    function closeDropdown(e) {
+        if (!dropdown.contains(e.target) && e.target !== element) {
+            dropdown.style.display = "none";
+            element.classList.remove("active");
+            elementcache = null;
+            document.removeEventListener("click", closeDropdown);
+        } else {
+            let outtask = e.target.closest(".btn");
+            let thetask = outtask?.getAttribute("data-todo");
+            let thelist = element.closest(".singList");
+            let thelistsid = thelist.dataset.key;
+            switch (thetask) {
+                case "delete":
+                    db.delete(thelistsid);
+                    renderLists();
+                    dropdown.style.display = "none";
+                    break;
+            }
+        }
+    }
+
+    setTimeout(() => document.addEventListener("click", closeDropdown), 0);
+}
+
+async function UInewEmptyList() {
+    let x = await newEmptyList();
+    loadUpList(x);
+}
