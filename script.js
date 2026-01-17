@@ -648,9 +648,9 @@ document.addEventListener("DOMContentLoaded", async () => {
         eleObjs.listsList.appendChild(element)
     });
 
-    let bannerText = "Let's get started with " + keys[0];
+    let bannerText = "Up next: <b>" + keys[0] + "</b>";
     if (keys.length > 1) {
         bannerText = `You have ${keys.length} open lists.`
     }
-    document.getElementById("BannerStatusText").innerText = bannerText;
+    document.getElementById("BannerStatusText").innerHTML = bannerText;
 })

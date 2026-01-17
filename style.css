@@ -1,9 +1,13 @@
-@import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;800&display=swap');
-
 @font-face {
     font-family: 'Material Symbols Rounded';
     font-style: normal;
     src: url("assets/icons.woff2") format('woff2');
+}
+
+@font-face {
+    font-family: "Google Sans";
+    font-style: normal;
+    src: url("assets/google_sans.ttf") format('truetype');
 }
 
 .icn {
@@ -146,7 +150,7 @@ body {
     background-color: var(--col-bg1);
     color: var(--col-txt1);
     user-select: none;
-    font-family: 'Poppins', sans-serif;
+    font-family: "Google Sans", sans-serif;
 }
 
 body * {
@@ -596,24 +600,72 @@ input[type="text"] {
 
 
 .headerBanner {
-    background-image: url(https://wallpapercat.com/w/full/b/a/9/1209998-3840x2160-desktop-4k-glow-in-the-dark-background-photo.jpg);
+    background-color: var(--col-bg2);
     background-position: 50% 85%;
     padding: 1em;
-    border-radius: 1em;
-    margin: 0 1em;
+    border-radius: .5em;
+    margin-bottom: 1em;
     aspect-ratio: 8;
+    margin-top: 1em;
     display: flex;
-    flex-direction: column;
+    flex-direction: row;
     justify-content: center;
     align-items: center;
     background-blend-mode: darken;
     background-repeat: no-repeat;
     background-size: cover;
     text-shadow: 0 0 1em #0000006e;
+    position: relative;
     font-size: clamp(14px, 2vw, 25px);
+    border: var(--box-crisp);
+
+    &::after {
+        content: "";
+        width: auto;
+        aspect-ratio: 1;
+        background-repeat: no-repeat;
+        height: 2.5em;
+        background-image: url(assets/logo.png);
+        position: absolute;
+        overflow: hidden;
+        top: 0;
+        left: 0;
+        transform: translate(1em, -14px);
+        background-size: 60%;
+        background-color: var(--col-bg3);
+        background-position: center;
+        border-radius: 50%;
+        border: var(--box-crisp);
+        box-shadow: 0 0 1em #00000041;
+    }
+
+    &>.stats,
+    #BannerStatusText {
+        color: #ffffffab;
+
+        & b {
+            color: white;
+        }
+    }
+
+    &>.stats {
+        flex: 1;
+        border-left: 1px solid #ffffff1c;
+        padding-left: 1em;
+    }
 
     &>* {
         margin: .3em;
+        flex: 2;
+        display: flex;
+        flex-direction: column;
+        gap: .5em;
+        &:first-child {
+            margin-top: 1em;
+        }
+        &>h1,p {
+            margin: 0;
+        }
     }
 }
 
@@ -623,12 +675,10 @@ input[type="text"] {
     margin: .5em auto;
     max-width: 1000px;
     width: 100%;
-    margin-top: 2em;
 
     & .label {
-        font-size: 1em;
+        font-size: 1.2em;
         opacity: .5;
-        margin-bottom: .5em;
         margin-left: .5em;
     }
 }
@@ -644,6 +694,7 @@ input[type="text"] {
     gap: .5em;
     justify-content: center;
     font-size: 1.2em;
+    border: var(--box-crisp);
 
     &>.statusicn {
         display: inherit;
@@ -697,5 +748,32 @@ button.addNewRootTask {
         min-width: 5px;
         height: 5px;
         background-color: #5be45b;
+    }
+}
+
+.listsnav {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--box-crisp-col);
+    padding-bottom: .5em;
+
+    &>.viewctrls {
+        background-color: var(--col-bg2);
+        display: inherit;
+            border-radius: .5em;
+            overflow: hidden;
+            border: var(--box-crisp);
+            padding: 3px;
+        &>div {
+            padding: 5px;
+            border-radius: .4em;
+            opacity: .8;
+            font-size: 1.2em;
+            &.selected {
+                background-color: var(--col-bg3);
+            }
+        }
     }
 }

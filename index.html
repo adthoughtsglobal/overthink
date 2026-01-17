@@ -94,12 +94,29 @@
             </button>
         </div>
         <div class="screen left" id="listsGrid">
-            <div class="headerBanner">
-                <h1>Welcome back!</h1>
-                <p id="BannerStatusText">You have 0 open lists, 0% completed. Keep grinding!</p>
-            </div>
+
             <div class="listlistCont">
-                <div class="label">All lists</div>
+                <div class="headerBanner">
+                    <div>
+                        <h1>Welcome back!</h1>
+                        <p id="BannerStatusText">You have 0 open lists, 0% completed. Keep grinding!</p>
+                    </div>
+                    <div class="stats">
+                        <span><b data-need="totalDone">100</b> total tasks done,</span>
+                        <span><b data-need="totalDoneToday">20</b> done today.</span>
+                        <span>That's <b data-need="totalDoneToday">3 less</b> than usual.</span>
+                        <span data-need="createdToday">Created <b>2</b> new tasks.</span>
+                        <span><b data-need="deletedToday">6</b> tasks deleted (<b data-need="deletedTodayDone">3</b>
+                            done).</span>
+                    </div>
+                </div>
+                <div class="listsnav">
+                    <div class="label">All lists</div>
+                    <div class="viewctrls">
+                        <div class="icn">grid_view</div>
+                        <div class="icn selected">density_medium</div>
+                    </div>
+                </div>
                 <div id="listsList">
                 </div>
             </div>
