@@ -1,9 +1,12 @@
 var tree, currentlyEditingListKey = null;
 const db = new IDBKV('OverthinkLocalRepo', 'lists');
+let dblistkeys;
+let renderToken = 0;
 class TaskTree {
     constructor(db, key) {
-        this.tasks = []
-        this.index = new Map()
+        this.tasks = [],
+            this.data = {},
+            this.index = new Map()
         this.parents = new Map()
         this.db = db
         this.key = key
@@ -11,65 +14,106 @@ class TaskTree {
 
     _id() { return crypto.randomUUID() }
 
-    _commit() {
-        const currenttreejson = JSON.stringify(taskTreeToJSON(this))
-        db.set(currentlyEditingListKey, currenttreejson)
+    async _commit() {
+        await db.set(currentlyEditingListKey, JSON.stringify(taskTreeToJSON(this)))
+        const stats = this.getStats()
+        const g = await db.get("gListData") || {}
+        g[currentlyEditingListKey] = stats
+        await db.set("gListData", g)
+        updateCounters(stats)
     }
 
     addTask(data = "", status = "pending", parentId = null) {
-        const taskid = this._id()
-        const now = Date.now()
-        const task = { taskid, data, status, children: [], createdAt: now, updatedAt: now, completedAt: status === "done" ? now : null }
-        this.tasks.push(task)
-        this.index.set(taskid, task)
-        if (parentId && this.index.has(parentId)) {
-            this.index.get(parentId).children.push(taskid)
-            this.parents.set(taskid, parentId)
+        const now = new Date()
+        const task = {
+            taskid: this._id(),
+            data,
+            status,
+            children: [],
+            createdAt: now,
+            updatedAt: now,
+            completedAt: status === "done" ? now : null
         }
+
+        this.tasks.push(task)
+        this.index.set(task.taskid, task)
+
+        if (parentId && this.index.has(parentId)) {
+            this.index.get(parentId).children.push(task.taskid)
+            this.parents.set(task.taskid, parentId)
+        }
+
         this._commit()
-        return taskid
+        return task.taskid
     }
 
     update(taskid, key, value) {
         const t = this.index.get(taskid)
         if (!t || !(key in t)) return false
-        t[key] = value
-        t.updatedAt = Date.now()
-        if (key === "status" && value === "done") t.completedAt = t.updatedAt
+
+        if (key === "status") {
+            t.status = value
+            t.completedAt = value === "done" ? new Date() : null
+        } else {
+            t[key] = value
+        }
+
+        t.updatedAt = new Date()
         this._commit()
         return true
     }
+    getDerivedStatus(taskid) {
+        const t = this.index.get(taskid)
+        if (!t) return null
+        if (!t.children.length) return t.status
+        let hasPending = false
+        let allDone = true
+        for (const cid of t.children) {
+            const s = this.getDerivedStatus(cid)
+            if (s !== "done") allDone = false
+            if (s === "pending") hasPending = true
+        }
+        if (allDone) return "done"
+        if (hasPending) return "pending"
+        return "in-progress"
+    }
 
     getStats() {
-        let total = this.tasks.length
-        let completed = 0
-        let lastCompleted = null
-        let lastAdded = null
-        let lastModified = null
-        let lastEdit = null
+        const today = startOfToday()
+        let totalTasks = 0
+        let completedTasks = 0
+        let completedToday = 0
+        let createdToday = 0
+        let lastCompletedTask = null
+        let lastAddedTask = null
+        let lastEditTask = null
 
         for (const t of this.tasks) {
+            const isLeaf = !t.children.length
+            if (!isLeaf) continue  // only leaf tasks count for totals
+
+            totalTasks++
+
+            const createdAt = new Date(t.createdAt)
+            const updatedAt = new Date(t.updatedAt)
+            const completedAt = t.completedAt ? new Date(t.completedAt) : null
+
             if (t.status === "done") {
-                completed++
-                if (!lastCompleted || t.completedAt > lastCompleted.completedAt) {
-                    lastCompleted = { taskid: t.taskid, completedAt: t.completedAt }
+                completedTasks++
+                if (completedAt && completedAt >= today) completedToday++
+                if (completedAt && (!lastCompletedTask || completedAt > lastCompletedTask.completedAt)) {
+                    lastCompletedTask = { taskid: t.taskid, completedAt }
                 }
             }
-            if (!lastAdded || t.createdAt > lastAdded.createdAt) lastAdded = t
-            if (!lastModified || t.updatedAt > lastModified.updatedAt) lastModified = t
+
+            if (createdAt >= today) createdToday++
+            if (!lastAddedTask || createdAt > lastAddedTask.createdAt) lastAddedTask = { taskid: t.taskid, createdAt }
+            if (!lastEditTask || updatedAt > lastEditTask.updatedAt) lastEditTask = { taskid: t.taskid, updatedAt }
         }
 
-        if (lastModified) lastEdit = { taskid: lastModified.taskid, updatedAt: lastModified.updatedAt }
-
-        return {
-            totalTasks: total,
-            completedTasks: completed,
-            lastCompletedTask: lastCompleted,
-            lastAddedTask: lastAdded ? { taskid: lastAdded.taskid, createdAt: lastAdded.createdAt } : null,
-            lastModified: lastModified ? lastModified.updatedAt : null,
-            lastEdit
-        }
+        return { totalTasks, completedTasks, completedToday, createdToday, lastCompletedTask, lastAddedTask, lastEdit: lastEditTask }
     }
+
 
 
     removeTask(taskid) {
@@ -107,6 +151,12 @@ class TaskTree {
     getRoots() { return this.tasks.filter(t => !this.parents.has(t.taskid)) }
 
     getTaskById(taskid) { return this.index.get(taskid) || null }
+}
+
+function startOfToday() {
+    const d = new Date()
+    d.setHours(0, 0, 0, 0)
+    return d
 }
 
 let nodeCache = new Map()
@@ -570,7 +620,8 @@ function taskTreeToJSON(tree) {
             data: t.data,
             status: t.status,
             children: [...t.children]
-        }))
+        })),
+        data: tree.data
     }
 }
 
@@ -642,11 +693,40 @@ function progressPieSVG(percent, size = 100, stroke = 10) {
 
 switchScreens("listsGrid");
 
-let dblistkeys;
+async function renderTimeStats() {
+    let bannerText = "This is the homepage, where all your future lists live.";
+    if (dblistkeys) {
+        bannerText = "Up next: <b>" + dblistkeys[0] + "</b>";
+        if (dblistkeys.length > 1) {
+            bannerText = `You have ${dblistkeys.length} open lists.`
+        }
+    }
+    document.getElementById("BannerStatusText").innerHTML = bannerText;
+
+    if (!dblistkeys) return;
+    const gListData = await db.get("gListData") || {}
+
+    let totalDone = 0
+    let doneToday = 0
+    let createdToday = 0
+
+    for (const s of Object.values(gListData)) {
+        totalDone += s.completedTasks || 0
+        doneToday += s.completedToday || 0
+        createdToday += s.createdToday || 0
+    }
+
+    document.querySelector('[data-need="totalDone"]').textContent = totalDone
+    document.querySelectorAll('[data-need="totalDoneToday"]').forEach(n => n.textContent = doneToday)
+    document.querySelector('[data-need="createdToday"]').textContent = createdToday
+}
+
 async function renderLists() {
+    const token = ++renderToken;
     const root = eleObjs.listsList;
-    let loadingTimer = setTimeout(() => {
-        if (!root.childNodes.length) {
+
+    const loadingTimer = setTimeout(() => {
+        if (token === renderToken && !root.childNodes.length) {
             const s = document.createElement("span");
             s.className = "awaittext";
             s.textContent = "Loading...";
@@ -654,20 +734,30 @@ async function renderLists() {
         }
     }, 1000);
 
-    let keys = await db.keys();
+    let keys = (await db.keys())
+        .filter(k => k !== "gListData")
+        .sort();
+
+    if (token !== renderToken) return;
+
     if (!keys.length) {
+        clearTimeout(loadingTimer);
         const s = document.createElement("span");
         s.className = "awaittext";
         s.textContent = "Click + to make your first list!";
         root.replaceChildren(s);
-        keys = await db.keys();
         document.getElementById("welcomeheading").innerText = "Welcome to Overthink!";
         document.getElementById("statdisplay").style.opacity = "0";
+        showThatElem(document.querySelector(".newListBtn"), "Click me to make a new list!");
+        renderTimeStats();
         return;
     }
-    document.getElementById("statdisplay").style.opacity = "1";
 
+    document.getElementById("statdisplay").style.opacity = "1";
     clearTimeout(loadingTimer);
+
+    const gListData = await db.get("gListData") || {};
+    if (token !== renderToken) return;
 
     const existing = new Map(
         [...root.children].map(n => [n.dataset.key, n])
@@ -675,8 +765,9 @@ async function renderLists() {
 
     const frag = document.createDocumentFragment();
 
-    keys.forEach(key => {
+    for (const key of keys) {
         let el = existing.get(key);
+
         if (!el) {
             el = document.createElement("div");
             el.className = "singList dropdown";
@@ -684,7 +775,6 @@ async function renderLists() {
 
             const statusIcon = document.createElement("div");
             statusIcon.className = "statusicn";
-            statusIcon.innerHTML = progressPieSVG(0);
 
             const title = document.createElement("div");
             title.className = "title";
@@ -695,30 +785,35 @@ async function renderLists() {
             const moreOptions = document.createElement("div");
             moreOptions.className = "icn moreOptions";
             moreOptions.textContent = "more_vert";
-            moreOptions.onclick = (event) => {
-                event.stopPropagation()
-                event.preventDefault();
-                createDropDownMenu(moreOptions)
-            }
+            moreOptions.onclick = e => {
+                e.stopPropagation();
+                e.preventDefault();
+                createDropDownMenu(moreOptions);
+            };
 
             el.append(statusIcon, title, separator, moreOptions);
-
-            el.onclick = async () => {
-                loadUpList(key)
-            };
+            el.onclick = () => loadUpList(key);
         }
 
-        const title = el.querySelector(".title");
-        if (title.textContent !== key) title.textContent = key;
+        const statusIcon = el.querySelector(".statusicn");
+        const data = gListData[key];
+        let x = 0;
+        if (data) {
+            x = (data.completedTasks / data.totalTasks * 100);
+        }
+        statusIcon.innerHTML = progressPieSVG(x);
+        statusIcon.style.display = "";
+        el.querySelector(".title").textContent = key;
 
         frag.appendChild(el);
         existing.delete(key);
-    });
+    }
 
-    existing.forEach(n => n.remove());
-    root.appendChild(frag);
+    if (token !== renderToken) return;
 
+    root.replaceChildren(frag);
     dblistkeys = keys;
+    renderTimeStats();
 }
 
 async function loadUpList(key) {
@@ -732,21 +827,18 @@ async function loadUpList(key) {
         taskTreeFromJSON(JSON.parse(await db.get(key))),
         document.getElementById("tasks_main_tree")
     );
+    updateCounters(tree.getStats());
 }
 
 document.addEventListener("DOMContentLoaded", async () => {
     await renderLists();
-    let bannerText = "This is the homepage, where all your future lists live.";
-    if (dblistkeys) {
-        bannerText = "Up next: <b>" + dblistkeys[0] + "</b>";
-        if (dblistkeys.length > 1) {
-            bannerText = `You have ${dblistkeys.length} open lists.`
-        }
-    }
-    document.getElementById("BannerStatusText").innerHTML = bannerText;
 })
 
-function switchlistview(newview) {
+function switchlistview(newview, elem) {
+    [...document.querySelectorAll(".viewctrls>.icn")].forEach(x => {
+        x.classList.remove("active");
+    })
+    elem.classList.add("active");
     document.getElementById("listsList").className = newview;
     renderLists();
 }
@@ -803,3 +895,75 @@ async function UInewEmptyList() {
     let x = await newEmptyList();
     loadUpList(x);
 }
+
+function updateCounters(stats) {
+    console.log(stats)
+    let completitionpercent = stats.completedTasks / stats.totalTasks * 100;
+    document.getElementById("in_file_completition_text").innerHTML = completitionpercent.toPrecision(3) + "% done";
+    document.getElementById("in_file_completition_bar").style.width = completitionpercent + "%"
+}
+function showThatElem(element, text) {
+    setTimeout(() => {
+        const overlay = document.createElement('div');
+        overlay.style.position = 'fixed';
+        overlay.style.top = 0;
+        overlay.style.left = 0;
+        overlay.style.width = '100%';
+        overlay.style.height = '100%';
+        overlay.style.backdropFilter = 'blur(5px)';
+        overlay.style.zIndex = 9998;
+        overlay.style.opacity = 0;
+        overlay.style.transition = 'opacity 0.5s';
+        document.body.appendChild(overlay);
+
+        const prevZ = element.style.zIndex;
+        element.style.zIndex = 9999;
+
+        const bubble = document.createElement('div');
+        bubble.textContent = text;
+
+        const parent = element.offsetParent || document.body;
+        const parentRect = parent.getBoundingClientRect();
+        const elemRect = element.getBoundingClientRect();
+
+        bubble.style.position = 'absolute';
+        bubble.style.top = elemRect.top - parentRect.top - 90 + 'px';
+        bubble.style.left = elemRect.left - parentRect.left - 80 + 'px';
+        bubble.style.margin = "1em";
+        bubble.style.minWidth = "8em";
+        bubble.style.background = 'black';
+        bubble.style.border = '1px solid black';
+        bubble.style.padding = '8px';
+        bubble.style.borderRadius = '6px';
+        bubble.style.zIndex = 10000;
+        bubble.style.maxWidth = '200px';
+        bubble.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
+        bubble.style.opacity = 0;
+        bubble.style.transform = 'translateY(10px)';
+        bubble.style.transition = 'opacity 0.3s, transform 0.3s';
+
+        parent.appendChild(bubble);
+
+        requestAnimationFrame(() => {
+            overlay.style.opacity = 1;
+            bubble.style.opacity = 1;
+            bubble.style.transform = 'translateY(0)';
+        });
+
+        function cleanup() {
+            overlay.style.opacity = 0;
+            bubble.style.opacity = 0;
+            bubble.style.transform = 'translateY(10px)';
+            element.style.zIndex = prevZ;
+            setTimeout(() => {
+                overlay.remove();
+                bubble.remove();
+            }, 300);
+            document.removeEventListener('click', cleanup);
+        }
+
+        document.addEventListener('click', cleanup);
+        setTimeout(cleanup, 3000);
+    }, 2000);
+}
+

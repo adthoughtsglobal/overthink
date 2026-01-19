@@ -38,7 +38,7 @@ class IDBKV {
             const req = db.transaction(this.storeName, 'readonly')
                 .objectStore(this.storeName)
                 .get(key);
-            req.onsuccess = () => resolve(req.result ? req.result.value : null);
+            req.onsuccess = () => resolve(req.result?.value ?? null);
             req.onerror = () => reject(req.error);
         });
     }

@@ -105,16 +105,14 @@
                         <span><b data-need="totalDone">100</b> total tasks done,</span>
                         <span><b data-need="totalDoneToday">20</b> done today.</span>
                         <span>That's <b data-need="totalDoneToday">3 less</b> than usual.</span>
-                        <span data-need="createdToday">Created <b>2</b> new tasks.</span>
-                        <span><b data-need="deletedToday">6</b> tasks deleted (<b data-need="deletedTodayDone">3</b>
-                            done).</span>
+                        <span>Created <b data-need="createdToday">2</b> new tasks.</span>
                     </div>
                 </div>
                 <div class="listsnav">
                     <div class="label labeldim">All lists</div>
                     <div class="viewctrls">
-                        <div class="icn" onclick="switchlistview('grid')">grid_view</div>
-                        <div class="icn selected" onclick="switchlistview('list')">density_medium</div>
+                        <div class="icn" onclick="switchlistview('grid', this)">grid_view</div>
+                        <div class="icn active" onclick="switchlistview('list', this)">density_medium</div>
                     </div>
                 </div>
                 <div id="listsList">
