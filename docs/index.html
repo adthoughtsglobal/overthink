@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Overthink - Documentation</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <div class="nav">
+        <div class="logo" onclick="switchScreens('listsGrid')">
+            <img src="../assets/logo.png" alt="Logo">
+        </div>
+        <span style="margin-left: 5px;">App Documentation</span>
+    </div>
+    <div class="document">
+        <div class="title">
+            <h1>Overthink</h1>
+            <hs>Personal task lists manager</hs>
+        </div>
+        <p>Overthink is a rich graphical nested lists manager that works offline. Built on the web using JavaScript,
+            HTML and CSS, can be used locally or even offline. Overthink can handle multiple finite lists by storing
+            them on IndexedDB.</p>
+        <p>The software is intended for people who have plans for the future and wants to note them somewhere in a
+            step-by-step hierarchical format. In Overthink sub-tasks are
+            handled as nested lists. Here every task can be a list and every list can have tasks. This hierarchical to
+            do
+            list can be highly useful for handling projects with complexity. Overthink’s built in graphical interface
+            allows for rendering these seemingly infinite lists without causing high CPU and memory spikes.</p>
+        <h2>Tasks</h2>
+        <p>Tasks form a finite tree structure identified internally by string-based task IDs. A task contains a title, a
+            completion state, and optional children. For tasks with sub-tasks, completion is computed from the
+            completion state of their children. The interface supports expand/collapse, full keyboard navigation, and
+            drag-and-drop reordering, allowing deep structures to remain usable without performance spikes.</p>
+
+        <h2>List files</h2>
+        <p>A list is saved as JavaScript Object Notation behind the scenes. You can export or import these 'list files'
+            from your lists. These JSON files can be hosted online for sharing lists.</p>
+        <h3>Sharing of lists</h3>
+        <p>Lists can be shared via Overthink URLs with a query param pointing to hosted JSON list files. Opening such a
+            link loads a read-only shared list
+            view rendered using Overthink’s interface. External lists cannot be edited directly. Users can clone a
+            shared list into their local storage to create an editable copy, preserving the original structure and task
+            relationships.</p>
+        <h1>Implementation</h1>
+        <p>The web implementation of Overthink consists of several parts. These include database management, hierarchical list renderer, hierarchical list editor, list's grid renderer, list URL handler and global stats storage and display.</p>
+        <h2>IndexedDB and storage management</h2>
+        <p>The IndexedDB management is done by the IDBKV.js script. It is a custom wrapper that turns IndexedDB into a more easier to use key value data storage. The default database is OverthinkLocalRepo and the default store is 'lists'. Each key in the list usually corresponds to a list in the GUI except from the global data storage. The global data storage stored in the key 'gListData' stores information on lists like their metadata, stats and more. gListData also stores settings and configuration for Overthink GUI.</p>
+        <h3>Storage structures</h3>
+        <p>A list is stored referenced by a key in the lists store. This key is generated using web crypto API. Due to this, there can be multiple lists with the same name as list titles or names are just the metadata of the list. </p>
+    </div>
+</body>
+
+</html>

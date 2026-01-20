@@ -90,7 +90,7 @@ class TaskTree {
 
         for (const t of this.tasks) {
             const isLeaf = !t.children.length
-            if (!isLeaf) continue  // only leaf tasks count for totals
+            if (!isLeaf) continue
 
             totalTasks++
 
@@ -694,12 +694,11 @@ function progressPieSVG(percent, size = 100, stroke = 10) {
 switchScreens("listsGrid");
 
 async function renderTimeStats() {
-    let bannerText = "This is the homepage, where all your future lists live.";
-    if (dblistkeys) {
-        bannerText = "Up next: <b>" + dblistkeys[0] + "</b>";
-        if (dblistkeys.length > 1) {
-            bannerText = `You have ${dblistkeys.length} open lists.`
-        }
+    let bannerText;
+    if (dblistkeys && dblistkeys.length >= 1) {
+        bannerText = `You have ${(dblistkeys.length == 1) ? "an" : dblistkeys.length} open list${(dblistkeys.length == 1) ? "" : "s"}.`
+    } else {
+        bannerText = "This is the homepage, where all your future lists live.";
     }
     document.getElementById("BannerStatusText").innerHTML = bannerText;
 
@@ -709,14 +708,17 @@ async function renderTimeStats() {
     let totalDone = 0
     let doneToday = 0
     let createdToday = 0
+    let totalTasks = 0
 
     for (const s of Object.values(gListData)) {
         totalDone += s.completedTasks || 0
         doneToday += s.completedToday || 0
         createdToday += s.createdToday || 0
+        totalTasks += s.totalTasks || 0
     }
 
     document.querySelector('[data-need="totalDone"]').textContent = totalDone
+    document.querySelector('[data-need="totalTasks"]').textContent = totalTasks;
     document.querySelectorAll('[data-need="totalDoneToday"]').forEach(n => n.textContent = doneToday)
     document.querySelector('[data-need="createdToday"]').textContent = createdToday
 }
