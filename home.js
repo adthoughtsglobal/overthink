@@ -34,7 +34,7 @@ function switchScreens(screen) {
     next.classList.remove("left")
     next.offsetHeight
     next.classList.add("active")
-    document.getElementById("listSearchInput").style.display = screen === "listsGrid" ? "flex" : "none"
+    document.getElementById("homeInps").style.display = screen === "listsGrid" ? "flex" : "none"
     document.getElementById("file_actions").style.display = screen === "listsGrid" ? "none" : "flex"
 }
 

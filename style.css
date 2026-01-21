@@ -379,12 +379,22 @@ textarea::placeholder {
     align-items: center;
 
     .dropdown_content {
+        &.right {
+            left: auto;
+            right: 0;
+
+            &::before {
+                right: 0;
+            }
+        }
+
         &::before {
             content: "";
             position: absolute;
             width: 6em;
             height: 3em;
             top: -1.5em;
+            z-index: -1;
         }
 
         .btn {
@@ -494,6 +504,10 @@ input[type="text"] {
             opacity: .5;
         }
     }
+
+    &.full {
+        flex: 1;
+    }
 }
 
 @keyframes up {
@@ -577,11 +591,10 @@ input[type="text"] {
     transform: translateY(1em);
     opacity: 0;
     pointer-events: none;
-    transition:
-        transform .3s cubic-bezier(0.1, 1.07, 1, 1),
-        opacity .25s ease;
+    transition: transform .3s cubic-bezier(0.1, 1.07, 1, 1), opacity .25s ease;
     top: 60px;
     background-color: var(--col-bg1);
+    height: calc(100% - 80px);
 }
 
 .screen.active {
@@ -677,7 +690,8 @@ input[type="text"] {
     flex-direction: column;
     margin: .5em auto;
     max-width: 1000px;
-    width: 100%;
+    width: calc(100% - 2em);
+    padding: 0 1em;
 
     & .label {
         margin-left: .5em;
@@ -966,8 +980,32 @@ span#saveStatus {
     gap: 0;
     overflow: hidden;
     border-radius: .5em;
+
     &>.btn {
         border-radius: 0;
 
+    }
+}
+
+.moreAppsDropDownContent {
+    width: fit-content;
+    min-width: 0;
+
+    &>.app {
+        display: flex;
+        flex-direction: column;
+        gap: .8em;
+        width: 4em;
+        align-items: center;
+        padding: 1em;
+        border-radius: .5em;
+
+        &>img {
+            width: 2em;
+        }
+
+        &:hover {
+            background-color: var(--col-bg2);
+        }
     }
 }

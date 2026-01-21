@@ -83,13 +83,25 @@
                 </div>
             </div>
         </div>
-        <div class="group inputs" id="listSearchInput">
-
+        <div id="homeInps" class="group full">
             <div class="newListBtn" onclick="UInewEmptyList();">
                 <div class="icn">add</div>
             </div>
-            <input type="text" placeholder="Search lists..." id="listSearch">
-            <div class="icn">search</div>
+            <div class="seperator"></div>
+            <div class="group inputs" id="listSearchInput">
+                <input type="text" placeholder="Search lists..." id="listSearch">
+                <div class="icn">search</div>
+            </div>
+            <div class="seperator"></div>
+            <div id="moreAppsDropDown" class="dropdown">
+                <div class="icn">apps</div>
+                <div class="moreAppsDropDownContent dropdown_content right">
+                    <div class="app">
+                        <img src="assets/logo.png" class="appBanner" alt="Overthink">
+                        <span class="appTitle">Overthink</span>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
     <div id="charlie">
@@ -138,37 +150,37 @@
     </div>
     <script>let fontLoaded = false;
 
-const hideIcon = el => {
-    if (!fontLoaded) el.style.display = 'none';
-};
+        const hideIcon = el => {
+            if (!fontLoaded) el.style.display = 'none';
+        };
 
-const showIcon = el => {
-    el.style.display = '';
-};
+        const showIcon = el => {
+            el.style.display = '';
+        };
 
-const processIcons = () => {
-    document.querySelectorAll('.icn').forEach(hideIcon);
-};
+        const processIcons = () => {
+            document.querySelectorAll('.icn').forEach(hideIcon);
+        };
 
-processIcons();
+        processIcons();
 
-const observer = new MutationObserver(mutations => {
-    mutations.forEach(m => {
-        m.addedNodes.forEach(node => {
-            if (node.nodeType === 1) {
-                if (node.classList.contains('icn')) hideIcon(node);
-                node.querySelectorAll?.('.icn').forEach(hideIcon);
-            }
+        const observer = new MutationObserver(mutations => {
+            mutations.forEach(m => {
+                m.addedNodes.forEach(node => {
+                    if (node.nodeType === 1) {
+                        if (node.classList.contains('icn')) hideIcon(node);
+                        node.querySelectorAll?.('.icn').forEach(hideIcon);
+                    }
+                });
+            });
         });
-    });
-});
 
-observer.observe(document.body, { childList: true, subtree: true });
+        observer.observe(document.body, { childList: true, subtree: true });
 
-document.fonts.load("1em 'Material Symbols Rounded'").then(() => {
-    fontLoaded = true;
-    document.querySelectorAll('.icn').forEach(showIcon);
-});
+        document.fonts.load("1em 'Material Symbols Rounded'").then(() => {
+            fontLoaded = true;
+            document.querySelectorAll('.icn').forEach(showIcon);
+        });
 
     </script>
     <script src="IDBKV.js"></script>
