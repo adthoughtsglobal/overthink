@@ -379,13 +379,24 @@ textarea::placeholder {
     align-items: center;
 
     .dropdown_content {
-
         &::before {
             content: "";
             position: absolute;
             width: 6em;
             height: 3em;
             top: -1.5em;
+        }
+
+        .btn {
+            background-color: transparent;
+            border: 1px solid transparent;
+            box-shadow: none;
+            border-bottom: 1px solid var(--box-crisp-col);
+
+            &:hover {
+                background: var(--col-bg3);
+                border: var(--box-crisp);
+            }
         }
     }
 
@@ -527,6 +538,14 @@ input[type="text"] {
         display: flex;
         flex-direction: row;
         border: var(--box-crisp);
+
+        &:first-child {
+            border-radius: .5em .5em 0 0;
+        }
+        &:last-child {
+            border-radius: 0 0 .5em .5em;
+        }
+
 
         &>.label {
             flex: 1;

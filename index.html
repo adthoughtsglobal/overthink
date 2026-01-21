@@ -103,7 +103,8 @@
                     </div>
                     <div class="stats" id="statdisplay">
                         <span>Created <b data-need="createdToday">2</b> tasks today.</span>
-                        <span><b data-need="totalDone">100</b> done out of <b data-need="totalTasks">100</b> total.</span>
+                        <span><b data-need="totalDone">100</b> done out of <b data-need="totalTasks">100</b>
+                            total.</span>
                         <span>But you did <b data-need="totalDoneToday">20</b> tasks today.</span>
                         <span>Keep grinding, human!</span>
                     </div>
@@ -127,8 +128,44 @@
             <div class="icn">delete</div>
         </div>
     </div>
+    <script>let fontLoaded = false;
+
+const hideIcon = el => {
+    if (!fontLoaded) el.style.display = 'none';
+};
+
+const showIcon = el => {
+    el.style.display = '';
+};
+
+const processIcons = () => {
+    document.querySelectorAll('.icn').forEach(hideIcon);
+};
+
+processIcons();
+
+const observer = new MutationObserver(mutations => {
+    mutations.forEach(m => {
+        m.addedNodes.forEach(node => {
+            if (node.nodeType === 1) {
+                if (node.classList.contains('icn')) hideIcon(node);
+                node.querySelectorAll?.('.icn').forEach(hideIcon);
+            }
+        });
+    });
+});
+
+observer.observe(document.body, { childList: true, subtree: true });
+
+document.fonts.load("1em 'Material Symbols Rounded'").then(() => {
+    fontLoaded = true;
+    document.querySelectorAll('.icn').forEach(showIcon);
+});
+
+    </script>
     <script src="IDBKV.js"></script>
-    <script src="script.js" defer></script>
+    <script src="home.js" defer></script>
+    <script src="list.js" defer></script>
 </body>
 
 </html>
