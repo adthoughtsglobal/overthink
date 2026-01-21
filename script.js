@@ -3,18 +3,24 @@ const db = new IDBKV('OverthinkLocalRepo', 'lists');
 let dblistkeys;
 let renderToken = 0;
 class TaskTree {
-    constructor(db, key) {
+    constructor(db, key = currentlyEditingListKey) {
         this.tasks = [],
             this.data = {},
             this.index = new Map()
         this.parents = new Map()
-        this.db = db
-        this.key = key
     }
 
     _id() { return crypto.randomUUID() }
 
     async _commit() {
+        const now = Date.now()
+        this.tasks.forEach(t => {
+            if (!t.createdAt) t.createdAt = now
+            if (!t.updatedAt) t.updatedAt = now
+            if (t.status === "done" && !t.completedAt) t.completedAt = now
+            if (t.status !== "done") t.completedAt = null
+        })
+
         await db.set(currentlyEditingListKey, JSON.stringify(taskTreeToJSON(this)))
         const stats = this.getStats()
         const g = await db.get("gListData") || {}
@@ -23,16 +29,16 @@ class TaskTree {
         updateCounters(stats)
     }
 
+
     addTask(data = "", status = "pending", parentId = null) {
-        const now = new Date()
         const task = {
             taskid: this._id(),
             data,
             status,
             children: [],
-            createdAt: now,
-            updatedAt: now,
-            completedAt: status === "done" ? now : null
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+            completedAt: status === "done" ? Date.now() : null
         }
 
         this.tasks.push(task)
@@ -53,15 +59,16 @@ class TaskTree {
 
         if (key === "status") {
             t.status = value
-            t.completedAt = value === "done" ? new Date() : null
+            t.completedAt = value === "done" ? Date.now() : null
         } else {
             t[key] = value
         }
 
-        t.updatedAt = new Date()
+        t.updatedAt = Date.now()
         this._commit()
         return true
     }
+
     getDerivedStatus(taskid) {
         const t = this.index.get(taskid)
         if (!t) return null
@@ -77,43 +84,43 @@ class TaskTree {
         if (hasPending) return "pending"
         return "in-progress"
     }
-
     getStats() {
-        const today = startOfToday()
+        const today = startOfToday().getTime()
         let totalTasks = 0
         let completedTasks = 0
-        let completedToday = 0
-        let createdToday = 0
         let lastCompletedTask = null
         let lastAddedTask = null
         let lastEditTask = null
 
         for (const t of this.tasks) {
-            const isLeaf = !t.children.length
-            if (!isLeaf) continue
+            if (t.children.length) continue
 
             totalTasks++
-
-            const createdAt = new Date(t.createdAt)
-            const updatedAt = new Date(t.updatedAt)
-            const completedAt = t.completedAt ? new Date(t.completedAt) : null
+            const createdAt = t.createdAt
+            const updatedAt = t.updatedAt
+            const completedAt = t.completedAt
 
             if (t.status === "done") {
                 completedTasks++
-                if (completedAt && completedAt >= today) completedToday++
-                if (completedAt && (!lastCompletedTask || completedAt > lastCompletedTask.completedAt)) {
+                if (!lastCompletedTask || completedAt > lastCompletedTask.completedAt) {
                     lastCompletedTask = { taskid: t.taskid, completedAt }
                 }
             }
 
-            if (createdAt >= today) createdToday++
-            if (!lastAddedTask || createdAt > lastAddedTask.createdAt) lastAddedTask = { taskid: t.taskid, createdAt }
-            if (!lastEditTask || updatedAt > lastEditTask.updatedAt) lastEditTask = { taskid: t.taskid, updatedAt }
+            if (!lastAddedTask || createdAt > lastAddedTask.createdAt) {
+                lastAddedTask = { taskid: t.taskid, createdAt }
+            }
+
+            if (!lastEditTask || updatedAt > lastEditTask.updatedAt) {
+                lastEditTask = { taskid: t.taskid, updatedAt }
+            }
         }
+
+        const completedToday = lastCompletedTask && lastCompletedTask.completedAt >= today ? 1 : 0
+        const createdToday = lastAddedTask && lastAddedTask.createdAt >= today ? 1 : 0
 
         return { totalTasks, completedTasks, completedToday, createdToday, lastCompletedTask, lastAddedTask, lastEdit: lastEditTask }
     }
-
 
 
     removeTask(taskid) {
@@ -669,6 +676,7 @@ function switchScreens(screen) {
 }
 
 function progressPieSVG(percent, size = 100, stroke = 10) {
+    if (isNaN(percent)) percent = 100;
     if (percent === 100) {
         return `<svg width="${size}" height="${size}" viewBox="0 0 100 100">
             <circle cx="50" cy="50" r="45" fill="none" stroke="#4a4a4a" stroke-width="${stroke}"/>
@@ -717,10 +725,19 @@ async function renderTimeStats() {
         totalTasks += s.totalTasks || 0
     }
 
-    document.querySelector('[data-need="totalDone"]').textContent = totalDone
-    document.querySelector('[data-need="totalTasks"]').textContent = totalTasks;
-    document.querySelectorAll('[data-need="totalDoneToday"]').forEach(n => n.textContent = doneToday)
-    document.querySelector('[data-need="createdToday"]').textContent = createdToday
+    const setOrHide = (selector, value) => {
+        const el = document.querySelector(selector);
+        if (el) {
+            console.log(el.parentElement, value)
+            el.parentElement.style.display = value ? "" : "none";
+            el.textContent = value;
+        }
+    }
+
+    setOrHide('[data-need="totalDone"]', totalDone)
+    setOrHide('[data-need="totalTasks"]', totalTasks)
+    setOrHide('[data-need="totalDoneToday"]', doneToday)
+    setOrHide('[data-need="createdToday"]', createdToday)
 }
 
 async function renderLists() {
@@ -750,7 +767,6 @@ async function renderLists() {
         root.replaceChildren(s);
         document.getElementById("welcomeheading").innerText = "Welcome to Overthink!";
         document.getElementById("statdisplay").style.opacity = "0";
-        showThatElem(document.querySelector(".newListBtn"), "Click me to make a new list!");
         renderTimeStats();
         return;
     }
@@ -899,73 +915,8 @@ async function UInewEmptyList() {
 }
 
 function updateCounters(stats) {
-    console.log(stats)
     let completitionpercent = stats.completedTasks / stats.totalTasks * 100;
+    if (isNaN(completitionpercent)) completitionpercent = 100;
     document.getElementById("in_file_completition_text").innerHTML = completitionpercent.toPrecision(3) + "% done";
     document.getElementById("in_file_completition_bar").style.width = completitionpercent + "%"
 }
-function showThatElem(element, text) {
-    setTimeout(() => {
-        const overlay = document.createElement('div');
-        overlay.style.position = 'fixed';
-        overlay.style.top = 0;
-        overlay.style.left = 0;
-        overlay.style.width = '100%';
-        overlay.style.height = '100%';
-        overlay.style.backdropFilter = 'blur(5px)';
-        overlay.style.zIndex = 9998;
-        overlay.style.opacity = 0;
-        overlay.style.transition = 'opacity 0.5s';
-        document.body.appendChild(overlay);
-
-        const prevZ = element.style.zIndex;
-        element.style.zIndex = 9999;
-
-        const bubble = document.createElement('div');
-        bubble.textContent = text;
-
-        const parent = element.offsetParent || document.body;
-        const parentRect = parent.getBoundingClientRect();
-        const elemRect = element.getBoundingClientRect();
-
-        bubble.style.position = 'absolute';
-        bubble.style.top = elemRect.top - parentRect.top - 90 + 'px';
-        bubble.style.left = elemRect.left - parentRect.left - 80 + 'px';
-        bubble.style.margin = "1em";
-        bubble.style.minWidth = "8em";
-        bubble.style.background = 'black';
-        bubble.style.border = '1px solid black';
-        bubble.style.padding = '8px';
-        bubble.style.borderRadius = '6px';
-        bubble.style.zIndex = 10000;
-        bubble.style.maxWidth = '200px';
-        bubble.style.boxShadow = '0 2px 8px rgba(0,0,0,0.2)';
-        bubble.style.opacity = 0;
-        bubble.style.transform = 'translateY(10px)';
-        bubble.style.transition = 'opacity 0.3s, transform 0.3s';
-
-        parent.appendChild(bubble);
-
-        requestAnimationFrame(() => {
-            overlay.style.opacity = 1;
-            bubble.style.opacity = 1;
-            bubble.style.transform = 'translateY(0)';
-        });
-
-        function cleanup() {
-            overlay.style.opacity = 0;
-            bubble.style.opacity = 0;
-            bubble.style.transform = 'translateY(10px)';
-            element.style.zIndex = prevZ;
-            setTimeout(() => {
-                overlay.remove();
-                bubble.remove();
-            }, 300);
-            document.removeEventListener('click', cleanup);
-        }
-
-        document.addEventListener('click', cleanup);
-        setTimeout(cleanup, 3000);
-    }, 2000);
-}
-
