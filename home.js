@@ -184,7 +184,7 @@ async function renderLists() {
         }
         statusIcon.innerHTML = progressPieSVG(x);
         statusIcon.style.display = "";
-        el.querySelector(".title").textContent = key;
+        el.querySelector(".title").textContent = gListData[key].name || key;
 
         frag.appendChild(el);
         existing.delete(key);
@@ -197,22 +197,17 @@ async function renderLists() {
     renderTimeStats();
 }
 
-async function loadUpList(key) {
-    switchScreens("treeEditor");
-    currentlyEditingListKey = key;
-
-    nodeCache.forEach(el => el.remove())
-    nodeCache.clear()
-
-    renderTasks(
-        taskTreeFromJSON(JSON.parse(await db.get(key))),
-        document.getElementById("tasks_main_tree")
-    );
-    updateCounters(tree.getStats());
-}
-
 document.addEventListener("DOMContentLoaded", async () => {
     await renderLists();
+    document.getElementById("titleEditor").addEventListener("keyup", (key) => {
+            tree._commit();
+    })
+    document.addEventListener("keydown", (key) => {
+        if (key.ctrlKey && key.key == "s") {
+            key.preventDefault();
+            tree._commit();
+        }
+    })
 })
 
 function switchlistview(newview, elem) {

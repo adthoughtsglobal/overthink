@@ -63,9 +63,17 @@
                     </div>
                 </div>
             </div>
+            <div class="group btngrp" style="max-width: 300px;">
+                <div class="icn btn" onclick="tree.undo()">undo</div>
+                <div class="icn btn" onclick="tree.redo()">redo</div>
+            </div>
             <div class="divider"></div>
             <div class="group inputs" style="max-width: 300px;">
                 <input type="text" id="titleEditor" placeholder="Untitled">
+            </div>
+
+            <div class="group">
+                <span id="saveStatus">Saved <div class="loader"></div></span>
             </div>
             <div class="seperator"></div>
             <div class="group vert progressbarCont">

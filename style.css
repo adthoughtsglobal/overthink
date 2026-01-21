@@ -542,6 +542,7 @@ input[type="text"] {
         &:first-child {
             border-radius: .5em .5em 0 0;
         }
+
         &:last-child {
             border-radius: 0 0 .5em .5em;
         }
@@ -847,5 +848,126 @@ div.newListBtn {
     &>.icn {
         opacity: 1 !important;
         font-size: 1.5em !important;
+    }
+}
+
+.loader {
+    width: 1.2em;
+    aspect-ratio: 1;
+    border-radius: 3em;
+    border: 2px solid #7b7b7bab;
+    animation:
+        l20-1 0.8s infinite linear alternate,
+        l20-2 1.6s infinite linear;
+}
+
+@keyframes l20-1 {
+    0% {
+        clip-path: polygon(50% 50%, 0 0, 50% 0%, 50% 0%, 50% 0%, 50% 0%, 50% 0%)
+    }
+
+    12.5% {
+        clip-path: polygon(50% 50%, 0 0, 50% 0%, 100% 0%, 100% 0%, 100% 0%, 100% 0%)
+    }
+
+    25% {
+        clip-path: polygon(50% 50%, 0 0, 50% 0%, 100% 0%, 100% 100%, 100% 100%, 100% 100%)
+    }
+
+    50% {
+        clip-path: polygon(50% 50%, 0 0, 50% 0%, 100% 0%, 100% 100%, 50% 100%, 0% 100%)
+    }
+
+    62.5% {
+        clip-path: polygon(50% 50%, 100% 0, 100% 0%, 100% 0%, 100% 100%, 50% 100%, 0% 100%)
+    }
+
+    75% {
+        clip-path: polygon(50% 50%, 100% 100%, 100% 100%, 100% 100%, 100% 100%, 50% 100%, 0% 100%)
+    }
+
+    100% {
+        clip-path: polygon(50% 50%, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 50% 100%, 0% 100%)
+    }
+}
+
+@keyframes l20-2 {
+    0% {
+        transform: scale(.8) scaleY(1) rotate(0deg)
+    }
+
+    49.99% {
+        transform: scale(.8) scaleY(1) rotate(135deg)
+    }
+
+    50% {
+        transform: scale(.8) scaleY(-1) rotate(0deg)
+    }
+
+    100% {
+        transform: scale(.8) scaleY(-1) rotate(-135deg)
+    }
+}
+
+.loader.done {
+    animation: none;
+    clip-path: none;
+    position: relative;
+}
+
+.loader.done::before {
+    content: "";
+    position: absolute;
+    inset: 30%;
+    height: 15px;
+    width: 7px;
+    border-right: 4px solid #4caf50;
+    border-bottom: 4px solid #4caf50;
+    transform: rotate(45deg) scale(0.6) translate(-10px, -6px) !important;
+    animation: check .25s ease-out forwards;
+}
+
+@keyframes check {
+    to {
+        transform: rotate(45deg) scale(1);
+    }
+}
+
+
+span#saveStatus {
+    display: flex;
+    align-items: center;
+    gap: .5em;
+    margin: 0 .5em;
+    background-color: var(--col-bg3);
+    padding: 3px 8px;
+    border-radius: .5em;
+    padding-right: 3px;
+    opacity: 0.5;
+    pointer-events: none;
+    transition: opacity .5s ease, transform .2s ease;
+}
+
+#saveStatus.show {
+    opacity: 1;
+    transform: translateY(0);
+    pointer-events: auto;
+}
+
+#saveStatus.done {
+    background-color: var(--col-bg3);
+}
+
+#saveStatus.hide {
+    opacity: 0.5;
+}
+
+.btngrp.group {
+    gap: 0;
+    overflow: hidden;
+    border-radius: .5em;
+    &>.btn {
+        border-radius: 0;
+
     }
 }

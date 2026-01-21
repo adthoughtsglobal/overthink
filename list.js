@@ -1,15 +1,39 @@
 var tree, currentlyEditingListKey = null;
+class History {
+    constructor(limit = 50) {
+        this.undo = []
+        this.redo = []
+        this.limit = limit
+    }
+    push(state) {
+        this.undo.push(state)
+        if (this.undo.length > this.limit) this.undo.shift()
+        this.redo.length = 0
+    }
+    undoState(current) {
+        if (!this.undo.length) return null
+        this.redo.push(current)
+        return this.undo.pop()
+    }
+    redoState(current) {
+        if (!this.redo.length) return null
+        this.undo.push(current)
+        return this.redo.pop()
+    }
+}
 class TaskTree {
     constructor() {
         this.tasks = [],
             this.data = {},
-            this.index = new Map()
-        this.parents = new Map()
+            this.index = new Map(),
+            this.parents = new Map()
+        this.history = new History()
     }
 
     _id() { return crypto.randomUUID() }
 
     async _commit() {
+        saveUI.startLoader()
         const now = Date.now()
         this.tasks.forEach(t => {
             if (!t.createdAt) t.createdAt = now
@@ -17,16 +41,35 @@ class TaskTree {
             if (t.status === "done" && !t.completedAt) t.completedAt = now
             if (t.status !== "done") t.completedAt = null
         })
-
         await db.set(currentlyEditingListKey, JSON.stringify(taskTreeToJSON(this)))
         const stats = this.getStats()
+        stats["name"] = document.getElementById("titleEditor").value;
         const g = await db.get("gListData") || {}
         g[currentlyEditingListKey] = stats
         await db.set("gListData", g)
         updateCounters(stats)
+        setTimeout(() => {
+            saveUI.markDone();
+            setTimeout(() => saveUI.endLoader(), 1000);
+        }, 500)
     }
+    scheduleSnapshot() {
+        if (this._isRestoring) return
 
+        // Save current state to pending snapshot
+        this._pendingSnapshot = this.snapshot()
 
+        // Only schedule once
+        if (!this._snapshotTimer) {
+            this._snapshotTimer = setTimeout(() => {
+                if (this._pendingSnapshot) {
+                    this.history.push(this._pendingSnapshot)
+                    this._pendingSnapshot = null
+                }
+                this._snapshotTimer = null
+            }, 500)
+        }
+    }
     addTask(data = "", status = "pending", parentId = null) {
         const task = {
             taskid: this._id(),
@@ -45,11 +88,11 @@ class TaskTree {
             this.index.get(parentId).children.push(task.taskid)
             this.parents.set(task.taskid, parentId)
         }
+        this.scheduleSnapshot()
 
         this._commit()
         return task.taskid
     }
-
     update(taskid, key, value) {
         const t = this.index.get(taskid)
         if (!t || !(key in t)) return false
@@ -62,9 +105,11 @@ class TaskTree {
         }
 
         t.updatedAt = Date.now()
+        this.scheduleSnapshot()
         this._commit()
         return true
     }
+
 
     getDerivedStatus(taskid) {
         const t = this.index.get(taskid)
@@ -132,6 +177,7 @@ class TaskTree {
         this.parents.delete(taskid)
         this.index.delete(taskid)
         this.tasks = this.tasks.filter(t => t.taskid !== taskid)
+        this.scheduleSnapshot()
         this._commit()
         return true
     }
@@ -153,6 +199,7 @@ class TaskTree {
             this.index.get(newParentId).children.push(taskid)
             this.parents.set(taskid, newParentId)
         }
+        this.scheduleSnapshot()
         this._commit()
         return true
     }
@@ -160,6 +207,49 @@ class TaskTree {
     getRoots() { return this.tasks.filter(t => !this.parents.has(t.taskid)) }
 
     getTaskById(taskid) { return this.index.get(taskid) || null }
+
+    snapshot() {
+        return JSON.stringify({
+            tasks: this.tasks,
+            parents: [...this.parents.entries()]
+        })
+    }
+
+    load(snapshot) {
+        const s = JSON.parse(snapshot)
+        this.tasks = s.tasks
+        this.parents = new Map(s.parents)
+        this.index = new Map()
+        for (const t of this.tasks) this.index.set(t.taskid, t)
+    }
+
+    _mutate(fn) {
+        this.history.push(this.snapshot())
+        fn()
+        this._commit()
+    }
+
+    undo() {
+        const s = this.history.undoState(this.snapshot())
+        if (!s) return
+        this._isRestoring = true
+        this.load(s)
+        this._commit()
+        this._isRestoring = false
+        renderTasks(tree,
+            document.getElementById("tasks_main_tree"))
+    }
+    redo() {
+        const s = this.history.redoState(this.snapshot())
+        if (!s) return
+        this._isRestoring = true
+        this.load(s)
+        this._commit()
+        this._isRestoring = false
+        renderTasks(tree,
+            document.getElementById("tasks_main_tree"))
+    }
+
 }
 
 function startOfToday() {
@@ -640,3 +730,46 @@ function isDescendant(tree, id, target) {
     for (const c of t.children) if (isDescendant(tree, c, target)) return true
     return false
 }
+
+
+async function loadUpList(key) {
+    switchScreens("treeEditor");
+    currentlyEditingListKey = key;
+
+    nodeCache.forEach(el => el.remove())
+    nodeCache.clear()
+
+    renderTasks(
+        taskTreeFromJSON(JSON.parse(await db.get(key))),
+        document.getElementById("tasks_main_tree")
+    );
+
+    const gListData = await db.get("gListData") || {};
+    document.getElementById("titleEditor").value = gListData[key]?.name || "";
+    updateCounters(tree.getStats());
+}
+
+const saveUI = {
+    el: document.getElementById("saveStatus"),
+    lastStart: 0,
+    loader() {
+        return this.el.querySelector(".loader");
+    },
+    startLoader() {
+        const now = Date.now();
+        if (now - this.lastStart < 2000) return;
+        this.lastStart = now;
+        this.el.classList.add("show");
+        this.el.classList.remove("done");
+        this.el.firstChild.textContent = "Saving… ";
+        this.loader().classList.remove("done");
+    },
+    markDone() {
+        this.el.firstChild.textContent = "Saved ";
+        this.loader().classList.add("done");
+        this.el.classList.add("done");
+    },
+    endLoader() {
+        this.el.classList.remove("show");
+    }
+};
