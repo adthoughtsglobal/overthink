@@ -102,10 +102,39 @@ async function renderTimeStats() {
     setOrHide('[data-need="totalDoneToday"]', doneToday)
     setOrHide('[data-need="createdToday"]', createdToday)
 }
+function makeListEl(key) {
+    const el = document.createElement("div");
+    el.className = "singList dropdown";
+    el.dataset.key = key;
+
+    const statusIcon = document.createElement("div");
+    statusIcon.className = "statusicn";
+
+    const title = document.createElement("div");
+    title.className = "title";
+
+    const separator = document.createElement("div");
+    separator.className = "seperator";
+
+    const moreOptions = document.createElement("div");
+    moreOptions.className = "icn moreOptions";
+    moreOptions.textContent = "more_vert";
+    moreOptions.onclick = e => {
+        e.stopPropagation();
+        e.preventDefault();
+        createDropDownMenu(moreOptions);
+    };
+
+    el.append(statusIcon, title, separator, moreOptions);
+    el.onclick = () => loadUpList(key);
+
+    return el;
+}
 
 async function renderLists() {
     const token = ++renderToken;
     const root = eleObjs.listsList;
+    const pinnedRoot = document.getElementById("pinnedListsList");
 
     const loadingTimer = setTimeout(() => {
         if (token === renderToken && !root.childNodes.length) {
@@ -116,10 +145,7 @@ async function renderLists() {
         }
     }, 1000);
 
-    let keys = (await db.keys())
-        .filter(k => k !== "gListData")
-        .sort();
-
+    let keys = (await db.keys()).filter(k => k !== "gListData").sort();
     if (token !== renderToken) return;
 
     if (!keys.length) {
@@ -128,6 +154,10 @@ async function renderLists() {
         s.className = "awaittext";
         s.textContent = "Click + to make your first list!";
         root.replaceChildren(s);
+        const d = document.createElement("span");
+        d.className = "awaittext";
+        d.textContent = "Lists you pin show up here.";
+        if (pinnedRoot) pinnedRoot.replaceChildren(d);
         document.getElementById("welcomeheading").innerText = "Welcome to Overthink!";
         document.getElementById("statdisplay").style.opacity = "0";
         renderTimeStats();
@@ -140,67 +170,65 @@ async function renderLists() {
     const gListData = await db.get("gListData") || {};
     if (token !== renderToken) return;
 
-    const existing = new Map(
-        [...root.children].map(n => [n.dataset.key, n])
-    );
+    const existing = new Map([...root.children].map(n => [n.dataset.key, n]));
+    const pinnedExisting = new Map(pinnedRoot ? [...pinnedRoot.children].map(n => [n.dataset.key, n]) : []);
 
     const frag = document.createDocumentFragment();
+    const pinnedFrag = document.createDocumentFragment();
 
     for (const key of keys) {
-        let el = existing.get(key);
+        let el = existing.get(key) || makeListEl(key);
 
-        if (!el) {
-            el = document.createElement("div");
-            el.className = "singList dropdown";
-            el.dataset.key = key;
-
-            const statusIcon = document.createElement("div");
-            statusIcon.className = "statusicn";
-
-            const title = document.createElement("div");
-            title.className = "title";
-
-            const separator = document.createElement("div");
-            separator.className = "seperator";
-
-            const moreOptions = document.createElement("div");
-            moreOptions.className = "icn moreOptions";
-            moreOptions.textContent = "more_vert";
-            moreOptions.onclick = e => {
-                e.stopPropagation();
-                e.preventDefault();
-                createDropDownMenu(moreOptions);
-            };
-
-            el.append(statusIcon, title, separator, moreOptions);
-            el.onclick = () => loadUpList(key);
-        }
-
-        const statusIcon = el.querySelector(".statusicn");
         const data = gListData[key];
         let x = 0;
         if (data) {
             x = (data.completedTasks / data.totalTasks * 100);
+            el.querySelector(".title").textContent = data.name || key;
         }
+
+        const statusIcon = el.querySelector(".statusicn");
         statusIcon.innerHTML = progressPieSVG(x);
         statusIcon.style.display = "";
-        el.querySelector(".title").textContent = gListData[key].name || key;
 
         frag.appendChild(el);
         existing.delete(key);
+
+        if (pinnedRoot && data?.pinned) {
+            let pel = pinnedExisting.get(key) || makeListEl(key);
+
+            const pStatusIcon = pel.querySelector(".statusicn");
+            pStatusIcon.innerHTML = progressPieSVG(x);
+            pStatusIcon.style.display = "";
+            pel.querySelector(".title").textContent = data.name || key;
+
+            pinnedFrag.appendChild(pel);
+            pinnedExisting.delete(key);
+        }
     }
 
     if (token !== renderToken) return;
 
     root.replaceChildren(frag);
+
+    if (pinnedRoot) {
+        pinnedRoot.replaceChildren(pinnedFrag);
+        if (pinnedRoot.childElementCount < 1) {
+            const d = document.createElement("span");
+            d.className = "awaittext";
+            d.innerHTML = "Open list options menu (<a class='icn'>more_vert</a>) to pin lists.";
+            pinnedRoot.replaceChildren(d);
+        }
+    }
+
     dblistkeys = keys;
     renderTimeStats();
 }
 
+
 document.addEventListener("DOMContentLoaded", async () => {
     await renderLists();
     document.getElementById("titleEditor").addEventListener("keyup", (key) => {
-            tree._commit();
+        tree._commit();
     })
     document.addEventListener("keydown", (key) => {
         if (key.ctrlKey && key.key == "s") {
@@ -208,16 +236,19 @@ document.addEventListener("DOMContentLoaded", async () => {
             tree._commit();
         }
     })
-})
+});
 
 function switchlistview(newview, elem) {
-    [...document.querySelectorAll(".viewctrls>.icn")].forEach(x => {
-        x.classList.remove("active");
-    })
+    document.querySelectorAll(".viewctrls>.icn").forEach(x => x.classList.remove("active"));
     elem.classList.add("active");
-    document.getElementById("listsList").className = newview;
+
+    const list = document.getElementById("listsList");
+    list.classList.remove("grid", "list");
+    list.classList.add(newview);
+
     renderLists();
 }
+
 
 async function newEmptyList() {
     let x = crypto.randomUUID();
@@ -243,7 +274,7 @@ function createDropDownMenu(element) {
     element.classList.add("active");
     elementcache = element;
 
-    function closeDropdown(e) {
+    async function closeDropdown(e) {
         if (!dropdown.contains(e.target) && e.target !== element) {
             dropdown.style.display = "none";
             element.classList.remove("active");
@@ -257,6 +288,18 @@ function createDropDownMenu(element) {
             switch (thetask) {
                 case "delete":
                     db.delete(thelistsid);
+                    renderLists();
+                    dropdown.style.display = "none";
+                    break;
+                case "pin":
+                    const gListData = await db.get("gListData") || {};
+                    if (!gListData[thelistsid]?.pinned) {
+                        gListData[thelistsid].pinned = 1;
+                        await db.set("gListData", gListData)
+                    } else {
+                        gListData[thelistsid].pinned = 0;
+                        await db.set("gListData", gListData)
+                    }
                     renderLists();
                     dropdown.style.display = "none";
                     break;

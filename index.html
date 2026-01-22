@@ -130,20 +130,29 @@
                     </div>
                 </div>
                 <div class="listsnav">
+                    <div class="label labeldim">Pinned lists</div>
+                </div>
+                <div id="pinnedListsList" class="listsList">
+                </div>
+                <div class="listsnav">
                     <div class="label labeldim">All lists</div>
                     <div class="viewctrls">
                         <div class="icn" onclick="switchlistview('grid', this)">grid_view</div>
                         <div class="icn active" onclick="switchlistview('list', this)">density_medium</div>
                     </div>
                 </div>
-                <div id="listsList">
+                <div id="listsList" class="listsList">
                 </div>
             </div>
 
         </div>
     </div>
     <div id="listManageDropdown" class="dropdown_content">
-        <div class="btn" data-todo="delete">
+        <div class="btn" data-todo="pin">
+            <div class="label">Toggle pin</div>
+            <div class="icn">keep</div>
+        </div>
+        <div class="btn" data-todo="delete" style="color: var(--col-bad);">
             <div class="label">Delete</div>
             <div class="icn">delete</div>
         </div>
