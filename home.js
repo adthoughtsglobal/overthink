@@ -313,6 +313,7 @@ function createDropDownMenu(element) {
 async function UInewEmptyList() {
     let x = await newEmptyList();
     loadUpList(x);
+    document.getElementById("titleEditor").focus();
 }
 
 function updateCounters(stats) {

@@ -334,39 +334,28 @@ textarea::placeholder {
     }
 }
 
-.del_task_btn {
-    background: var(--col-bg2);
-    border: var(--box-crisp);
-    width: fit-content;
-    display: flex;
-    padding: .3em;
-    gap: .5em;
-    border-radius: 1em;
+.task_btns {
     margin-left: .8em;
     position: absolute;
-    right: -3.4em;
+    right: -5.4em;
     top: 23px;
-    transition: .5s;
-}
+    display: inherit;
+    gap: .5em;
 
-.new_task_btn {
-    background: var(--col-bg2);
-    border: var(--box-crisp);
-    width: fit-content;
-    display: flex;
-    padding: .3em;
-    gap: .5em;
-    border-radius: 1em;
-    margin-left: .8em;
-    position: absolute;
-    left: -60px;
-    top: 23px;
-    transition: .5s;
+    &>.task_btn {
+        background: var(--col-bg2);
+        border: var(--box-crisp);
+        width: fit-content;
+        display: flex;
+        padding: .3em;
+        gap: .5em;
+        border-radius: 1em;
+        transition: .5s;
+    }
 }
 
 .ancestor_hover .new_task_btn {
     opacity: 1;
-    box-shadow: 0 0 1em 1em var(--col-bg1);
 }
 
 .nav {
@@ -475,6 +464,13 @@ input[type="text"] {
     justify-content: left;
 }
 
+.group.inputs:focus-within {
+    border-radius: 5px;
+    transition: .2s cubic-bezier(0.075, 0.82, 0.165, 1);
+    box-shadow: 0 -13px 0px -11px var(--col-bgh) inset;
+}
+
+
 .nav .group {
     gap: .2em;
     align-items: center;
@@ -482,7 +478,6 @@ input[type="text"] {
     &.inputs {
         background-color: var(--col-bg1);
         border-radius: .5em;
-        padding-right: .5em;
         margin: auto;
         width: 75vw;
         max-width: 600px;
@@ -502,6 +497,7 @@ input[type="text"] {
         .icn {
             font-size: 1.2em;
             opacity: .5;
+            padding: 0 .5em;
         }
     }
 
@@ -618,7 +614,6 @@ input[type="text"] {
     padding: 1em;
     border-radius: .5em;
     margin-bottom: 1em;
-    aspect-ratio: 8;
     margin-top: 1em;
     display: flex;
     flex-direction: row;
@@ -631,24 +626,18 @@ input[type="text"] {
     position: relative;
     font-size: clamp(14px, 2vw, 25px);
     border: var(--box-crisp);
+    min-height: 130px;
 
-    &::after {
-        content: "";
+    & .appIconHead {
         width: auto;
         aspect-ratio: 1;
-        background-repeat: no-repeat;
         height: 2.5em;
-        background-image: url(assets/logo.png);
-        position: absolute;
-        overflow: hidden;
-        top: 0;
-        left: 0;
-        transform: translate(1em, -14px);
-        background-size: 60%;
-        background-color: var(--col-bg3);
-        background-position: center;
+        width: fit-content;
+        object-fit: fill;
+        object-position: center;
         border-radius: 50%;
         border: var(--box-crisp);
+        margin-bottom: .5em;
         box-shadow: 0 0 1em #00000041;
     }
 
@@ -673,10 +662,6 @@ input[type="text"] {
         display: flex;
         flex-direction: column;
         gap: .5em;
-
-        &:first-child {
-            margin-top: 1em;
-        }
 
         &>h1,
         p {
@@ -856,7 +841,6 @@ div.newListBtn {
     color: var(--col-txth);
     bottom: 2em;
     right: 2em;
-    box-shadow: 0 5px 10px #0000005c;
     display: flex;
     border: 1px solid var(--box-crisp);
 
@@ -1009,4 +993,12 @@ span#saveStatus {
             background-color: var(--col-bg2);
         }
     }
+}
+
+.task_additional>svg {
+    width: auto;
+    height: 13px;
+    aspect-ratio: 1 / 1;
+    margin-right: .4em;
+    transform: scale(1.3);
 }

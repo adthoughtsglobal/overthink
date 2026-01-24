@@ -106,18 +106,26 @@
     </div>
     <div id="charlie">
         <div class="screen" id="treeEditor">
-            <div id="tasks_main_tree"></div>
-            <button class="addNewRootTask"
-                onclick="tree.addTask('', 'pending');renderTasks(tree, document.getElementById('tasks_main_tree'))">
-                <div class="icn">add</div>
-                <span>Add task</span>
-            </button>
+            <div class="editorColumn">
+                <div id="tasks_main_tree"></div>
+                <button class="addNewRootTask"
+                    onclick="tree.addTask('', 'pending');renderTasks(tree, document.getElementById('tasks_main_tree'))">
+                    <div class="icn">add</div>
+                    <span>Add task</span>
+                </button>
+            </div>
+            <div class="editorColumn">
+                <div class="columnContent">
+                    
+                </div>
+            </div>
         </div>
         <div class="screen left" id="listsGrid">
 
             <div class="listlistCont">
                 <div class="headerBanner">
                     <div>
+                        <img src="assets/logo.png" class="appIconHead"></img>
                         <h1 id="welcomeheading">Welcome back!</h1>
                         <p id="BannerStatusText">You have 0 open lists, 0% completed. Keep grinding!</p>
                     </div>

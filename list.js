@@ -275,7 +275,6 @@ function renderTasks(tree, container) {
         }
     }
 }
-
 function renderTask(tree, task, container, depth, parentId, hidden, used) {
     let isDone = task.status === "done"
 
@@ -297,13 +296,17 @@ function renderTask(tree, task, container, depth, parentId, hidden, used) {
         let dataRem = createData(tree, task);
         wrap._data = dataRem[0];
         wrap._toggle = createCompletionToggle(tree, task, container, wrap)
+
+        wrap._btns = document.createElement("div")
+        wrap._btns.className = "task_btns"
         wrap._addBtn = createAddButton(tree, task, depth, container)
         wrap._delBtn = createDeleteButton(tree, task, container)
+        wrap._btns.append(wrap._addBtn, wrap._delBtn)
 
         attachDragHandlers(wrap._inner, tree, task, wrap._expand, container, dataRem[1].input)
 
-        wrap._inner.append(wrap._expand || "", wrap._data, wrap._toggle, wrap._delBtn)
-        wrap.append(wrap._inner, wrap._addBtn)
+        wrap._inner.append(wrap._expand || "", wrap._data, wrap._toggle, wrap._btns)
+        wrap.append(wrap._inner)
         nodeCache.set(task.taskid, wrap)
     }
 
@@ -313,12 +316,23 @@ function renderTask(tree, task, container, depth, parentId, hidden, used) {
 
     updateHierarchyLines(wrap, depth)
     updateInnerLayout(wrap._inner, depth)
+    const shouldHaveExpand = task.children?.length > 0
+
+    if (shouldHaveExpand && !wrap._expand) {
+        wrap._expand = createExpand(tree, task, container)
+        wrap._inner.insertBefore(wrap._expand, wrap._inner.firstChild)
+    }
+
+    if (!shouldHaveExpand && wrap._expand) {
+        wrap._expand.remove()
+        wrap._expand = null
+    }
+
     updateExpandState(wrap._expand, task)
     updateData(wrap._data, tree, task)
     updateAddButton(wrap._addBtn, depth)
     updateCompletionToggle(wrap._toggle, isDone)
     wrap._inner.classList.toggle("done", isDone)
-
 
     container.appendChild(wrap)
 
@@ -331,6 +345,8 @@ function renderTask(tree, task, container, depth, parentId, hidden, used) {
 
     return wrap
 }
+
+
 function toggleChildren(container, parentId, hide) {
     const rows = [...container.querySelectorAll(".ind_task")]
     const pid = String(parentId)
@@ -357,7 +373,6 @@ function toggleChildren(container, parentId, hide) {
 
     return !hide
 }
-
 function createExpand(tree, task, container) {
     if (!task.children.length) return null
 
@@ -369,13 +384,18 @@ function createExpand(tree, task, container) {
         expand.style.transform = open ? "rotate(90deg)" : "rotate(0deg)"
     }
 
-    setState(task.collapsed)
+    const apply = () => {
+        const open = !task.collapsed
+        toggleChildren(container, task.taskid, task.collapsed)
+        setState(open)
+    }
+
+    apply()
 
     expand.onclick = e => {
         e.stopPropagation()
         task.collapsed = !task.collapsed
-        const open = toggleChildren(container, task.taskid, task.collapsed)
-        setState(open)
+        apply()
     }
 
     return expand
@@ -404,6 +424,7 @@ function updateExpandState(expand, task) {
     if (!expand) return
     expand.style.transform = task.collapsed ? "rotate(0deg)" : "rotate(90deg)"
 }
+
 function updateData(data, tree, task) {
     const input = data._input
     if (document.activeElement !== input && input.innerText !== task.data) {
@@ -419,7 +440,7 @@ function updateData(data, tree, task) {
             if (c && c.status === "done") done++
         }
         status = done === task.children.length ? "done" : "pending"
-        data._meta.textContent = `${done}/${task.children.length} done`
+        data._meta.innerHTML = progressPieSVG((done/task.children.length)*100) +`${done}/${task.children.length} done`
     } else {
         data._meta.textContent = status
     }
@@ -432,7 +453,7 @@ function updateData(data, tree, task) {
 
 
 function updateAddButton(btn, depth) {
-    btn.style.marginLeft = depth * 4 + "em"
+    // btn.style.marginLeft = depth * 4 + 5.3 + "em"
 }
 
 function updateCompletionToggle(toggle, isDone) {
@@ -461,7 +482,7 @@ function addHierarchyLines(wrap, depth) {
 function createInner(depth, task) {
     const inner = document.createElement("div")
     inner.className = "task_inner"
-    inner.style.marginLeft = depth * 4 + "em"
+    // inner.style.marginLeft = depth * 6 + "em"
     inner.draggable = true
 
     let currentStatus = task.status;
@@ -470,60 +491,6 @@ function createInner(depth, task) {
     return inner
 }
 
-
-function disableInput(input) {
-    input.contentEditable = "false"
-    input.style.userSelect = "none"
-    input.blur()
-}
-
-function enableInput(input) {
-    input.contentEditable = "true"
-    input.style.userSelect = "auto"
-}
-
-function attachDragHandlers(inner, tree, task, expand, container, input) {
-    inner.addEventListener("dragstart", e => {
-        if (!task.collapsed) expand?.click()
-        e.dataTransfer.setData("text/plain", task.taskid)
-        inner.style.opacity = ".5"
-        disableInput(input)
-
-        const clone = inner.cloneNode(true)
-        clone.style.position = "fixed"
-        clone.style.top = "-1000px"
-        document.body.appendChild(clone)
-        e.dataTransfer.setDragImage(clone, 24, 24)
-        setTimeout(() => document.body.removeChild(clone), 0)
-    })
-
-    inner.addEventListener("dragend", () => {
-        inner.style.opacity = "1"
-        inner.classList.remove("drag_over")
-        enableInput(input)
-    })
-
-    inner.addEventListener("dragover", e => {
-        e.preventDefault()
-        inner.classList.add("drag_over")
-    })
-
-    inner.addEventListener("dragleave", () => {
-        inner.classList.remove("drag_over")
-    })
-
-    inner.addEventListener("drop", e => {
-        e.preventDefault()
-        inner.classList.remove("drag_over")
-        const draggedId = e.dataTransfer.getData("text/plain")
-        if (!draggedId) return
-        if (draggedId === task.taskid) return
-        if (isDescendant(tree, draggedId, task.taskid)) return
-        // console.log(43, draggedId, task.taskid);return;
-        tree.moveTaskIdToNewParentTaskId(draggedId, task.taskid)
-        renderTasks(tree, container)
-    })
-}
 function createData(tree, task) {
     const data = document.createElement("div")
     data.className = "task_data"
@@ -598,7 +565,7 @@ function createCompletionToggle(tree, task, container, wrap) {
 function createAddButton(tree, task, depth, container) {
     const btn = document.createElement("div")
     btn.className = "new_task_btn task_btn"
-    btn.style.marginLeft = depth * 4 + "em"
+    // btn.style.marginLeft = depth * 6 + "em"
     btn.innerHTML = `<div class="icn">add</div>`
     btn.onclick = () => {
         tree.addTask("", "pending", task.taskid)
@@ -637,6 +604,60 @@ function createDeleteButton(tree, task, container) {
         renderTasks(tree, container)
     }
     return btn
+}
+
+function disableInput(input) {
+    input.contentEditable = "false"
+    input.style.userSelect = "none"
+    input.blur()
+}
+
+function enableInput(input) {
+    input.contentEditable = "true"
+    input.style.userSelect = "auto"
+}
+
+function attachDragHandlers(inner, tree, task, expand, container, input) {
+    inner.addEventListener("dragstart", e => {
+        if (!task.collapsed) expand?.click()
+        e.dataTransfer.setData("text/plain", task.taskid)
+        inner.style.opacity = ".5"
+        disableInput(input)
+
+        const clone = inner.cloneNode(true)
+        clone.style.position = "fixed"
+        clone.style.top = "-1000px"
+        document.body.appendChild(clone)
+        e.dataTransfer.setDragImage(clone, 24, 24)
+        setTimeout(() => document.body.removeChild(clone), 0)
+    })
+
+    inner.addEventListener("dragend", () => {
+        inner.style.opacity = "1"
+        inner.classList.remove("drag_over")
+        enableInput(input)
+    })
+
+    inner.addEventListener("dragover", e => {
+        e.preventDefault()
+        inner.classList.add("drag_over")
+    })
+
+    inner.addEventListener("dragleave", () => {
+        inner.classList.remove("drag_over")
+    })
+
+    inner.addEventListener("drop", e => {
+        e.preventDefault()
+        inner.classList.remove("drag_over")
+        const draggedId = e.dataTransfer.getData("text/plain")
+        if (!draggedId) return
+        if (draggedId === task.taskid) return
+        if (isDescendant(tree, draggedId, task.taskid)) return
+        // console.log(43, draggedId, task.taskid);return;
+        tree.moveTaskIdToNewParentTaskId(draggedId, task.taskid)
+        renderTasks(tree, container)
+    })
 }
 
 function renderChildren(tree, task, container, depth, hidden) {
@@ -746,7 +767,7 @@ async function loadUpList(key) {
 
     const gListData = await db.get("gListData") || {};
     document.getElementById("titleEditor").value = gListData[key]?.name || "";
-    updateCounters(tree.getStats());
+    await updateCounters(tree.getStats());
 }
 
 const saveUI = {
