@@ -55,11 +55,8 @@ class TaskTree {
     }
     scheduleSnapshot() {
         if (this._isRestoring) return
-
-        // Save current state to pending snapshot
         this._pendingSnapshot = this.snapshot()
 
-        // Only schedule once
         if (!this._snapshotTimer) {
             this._snapshotTimer = setTimeout(() => {
                 if (this._pendingSnapshot) {
@@ -330,7 +327,6 @@ function renderTask(tree, task, container, depth, parentId, hidden, used) {
 
     updateExpandState(wrap._expand, task)
     updateData(wrap._data, tree, task)
-    updateAddButton(wrap._addBtn, depth)
     updateCompletionToggle(wrap._toggle, isDone)
     wrap._inner.classList.toggle("done", isDone)
 
@@ -400,22 +396,27 @@ function createExpand(tree, task, container) {
 
     return expand
 }
-
 function updateHierarchyLines(wrap, depth) {
-    const lines = wrap.querySelectorAll(".task_hir_line")
     const needed = depth + 1
-    while (lines.length > needed) lines[lines.length - 1].remove()
-    while (wrap.querySelectorAll(".task_hir_line").length < needed) {
-        const i = wrap.querySelectorAll(".task_hir_line").length - 1
-        const line = document.createElement("div")
-        line.className = "task_hir_line"
-        wrap.prepend(line)
+    const lines = wrap.querySelectorAll(".task_hir_line")
+    const current = lines.length
+
+    if (current > needed) {
+        for (let i = current - 1; i >= needed; i--) {
+            lines[i].remove()
+        }
+    } else if (current < needed) {
+        for (let i = current; i < needed; i++) {
+            const line = document.createElement("div")
+            line.className = "task_hir_line"
+            wrap.prepend(line)
+        }
     }
+
     wrap.querySelectorAll(".task_hir_line").forEach((l, i) => {
-        l.style.left = (i * 4 - .8) + "em"
+        l.style.left = (i * 4 - 0.8) + "em"
     })
 }
-
 function updateInnerLayout(inner, depth) {
     inner.style.marginLeft = depth * 4 + "em"
 }
@@ -451,11 +452,6 @@ function updateData(data, tree, task) {
     }
 }
 
-
-function updateAddButton(btn, depth) {
-    // btn.style.marginLeft = depth * 4 + 5.3 + "em"
-}
-
 function updateCompletionToggle(toggle, isDone) {
     toggle.textContent = isDone ? "undo" : "check"
     toggle.classList.toggle("done", isDone)
@@ -482,7 +478,6 @@ function addHierarchyLines(wrap, depth) {
 function createInner(depth, task) {
     const inner = document.createElement("div")
     inner.className = "task_inner"
-    // inner.style.marginLeft = depth * 6 + "em"
     inner.draggable = true
 
     let currentStatus = task.status;
@@ -565,7 +560,6 @@ function createCompletionToggle(tree, task, container, wrap) {
 function createAddButton(tree, task, depth, container) {
     const btn = document.createElement("div")
     btn.className = "new_task_btn task_btn"
-    // btn.style.marginLeft = depth * 6 + "em"
     btn.innerHTML = `<div class="icn">add</div>`
     btn.onclick = () => {
         tree.addTask("", "pending", task.taskid)
@@ -654,7 +648,6 @@ function attachDragHandlers(inner, tree, task, expand, container, input) {
         if (!draggedId) return
         if (draggedId === task.taskid) return
         if (isDescendant(tree, draggedId, task.taskid)) return
-        // console.log(43, draggedId, task.taskid);return;
         tree.moveTaskIdToNewParentTaskId(draggedId, task.taskid)
         renderTasks(tree, container)
     })
