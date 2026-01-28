@@ -40,7 +40,9 @@ class TaskTree {
             if (!t.updatedAt) t.updatedAt = now
             if (t.status === "done" && !t.completedAt) t.completedAt = now
             if (t.status !== "done") t.completedAt = null
+            if (!("color" in t)) t.color = null
         })
+
         await db.set(currentlyEditingListKey, JSON.stringify(taskTreeToJSON(this)))
         const stats = this.getStats()
         stats["name"] = document.getElementById("titleEditor").value;
@@ -73,6 +75,7 @@ class TaskTree {
             data,
             status,
             children: [],
+            color: null,
             createdAt: Date.now(),
             updatedAt: Date.now(),
             completedAt: status === "done" ? Date.now() : null
@@ -104,6 +107,7 @@ class TaskTree {
         t.updatedAt = Date.now()
         this.scheduleSnapshot()
         this._commit()
+        console.log("tree update", taskid, key, value)
         return true
     }
 
@@ -211,14 +215,14 @@ class TaskTree {
             parents: [...this.parents.entries()]
         })
     }
-
     load(snapshot) {
         const s = JSON.parse(snapshot)
-        this.tasks = s.tasks
+        this.tasks = s.tasks.map(t => ({ ...t, color: t.color ?? null }))
         this.parents = new Map(s.parents)
         this.index = new Map()
         for (const t of this.tasks) this.index.set(t.taskid, t)
     }
+
 
     _mutate(fn) {
         this.history.push(this.snapshot())
@@ -441,7 +445,7 @@ function updateData(data, tree, task) {
             if (c && c.status === "done") done++
         }
         status = done === task.children.length ? "done" : "pending"
-        data._meta.innerHTML = progressPieSVG((done/task.children.length)*100) +`${done}/${task.children.length} done`
+        data._meta.innerHTML = progressPieSVG((done / task.children.length) * 100) + `${done}/${task.children.length} done`
     } else {
         data._meta.textContent = status
     }
@@ -478,6 +482,8 @@ function addHierarchyLines(wrap, depth) {
 function createInner(depth, task) {
     const inner = document.createElement("div")
     inner.className = "task_inner"
+    console.log(445, task)
+    inner.style.border = `1px solid ${task.color || "var(--box-crisp-col)"}`
     inner.draggable = true
 
     let currentStatus = task.status;
@@ -588,15 +594,60 @@ function createAddButton(tree, task, depth, container) {
     }
     return btn
 }
-
 function createDeleteButton(tree, task, container) {
-    const btn = document.createElement("div")
-    btn.className = "del_task_btn task_btn"
-    btn.innerHTML = `<div class="icn">delete</div>`
-    btn.onclick = () => {
-        tree.removeTask(task.taskid);
-        renderTasks(tree, container)
+    const colors = {
+        red: "#7a3b3b",
+        blue: "#3b5f7a",
+        green: "#3f6b52",
+        yellow: "#7a6b3b",
+        purple: "#5e4a7a"
     }
+    const btn = document.createElement("div")
+    btn.className = "del_task_btn task_btn dropdown"
+    btn.innerHTML = `<div class="icn">more_vert</div>
+<div class="dropdown_content">
+    <div class="btngrp horiz"></div>
+    <div class="btn">
+        <div class="label">Delete task</div>
+        <div class="icn">close</div>
+    </div>
+</div>`
+
+    btn.querySelector(".dropdown_content .btn").addEventListener("click", e => {
+        e.stopPropagation()
+        tree.removeTask(task.taskid)
+        renderTasks(tree, container)
+    })
+
+    const btnGrp = btn.querySelector(".btngrp")
+
+    Object.entries(colors).forEach(([name, value]) => {
+        const colorDiv = document.createElement("div")
+        colorDiv.className = "btn colorBob"
+        colorDiv.style.backgroundColor = value
+        colorDiv.innerHTML = `<div class="tooltip">${name}</div>`;
+        colorDiv.onclick = e => {
+            e.stopPropagation()
+            tree.update(task.taskid, "color", name)
+            renderTasks(tree, container)
+        }
+        btnGrp.appendChild(colorDiv)
+    })
+
+    btn.onclick = e => {
+        e.stopPropagation()
+        btn.classList.toggle("open")
+    }
+
+    requestAnimationFrame(() => {
+        const parentTask = btn.closest(".ind_task")
+        if (parentTask) {
+            parentTask.addEventListener("mouseleave", () => {
+                btn.classList.remove("open")
+            })
+        }
+    })
+
     return btn
 }
 
@@ -731,9 +782,13 @@ function taskTreeToJSON(tree) {
             taskid: t.taskid,
             data: t.data,
             status: t.status,
-            children: [...t.children]
+            color: t.color,
+            children: t.children,
+            createdAt: t.createdAt,
+            updatedAt: t.updatedAt,
+            completedAt: t.completedAt
         })),
-        data: tree.data
+        parents: [...tree.parents.entries()]
     }
 }
 

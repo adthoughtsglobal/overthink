@@ -1,26 +1,20 @@
 
-+- Lists view homescreen.
++ Lists view homescreen.
 +    - New list.
 -        - upload list.
 -        - create blank list.
 -        - clone list from URL.
--    - starred lists.
++    - starred lists.
 +    - all lists view.
 -        - sort lists by time, name.
 +    - individual list card
--        - list name, list description, list completition pie.
--        - star list toggle.
++        - list name, list completition pie.
++        - star list toggle.
 -        - last updated timestamp
 +        - list quick action dropdown button
--            - remove list.
++            - remove list.
 -            - duplicate list.
 -            - mark entire list as done.
--- List view header pane.
--    - list title. (stored in JSON)
--    - optional list description (stored in JSON)
--    - optional list banner image (reference stored in JSON)
--    - list completition status
--    - quick action buttons
 -        - mark entire list as complete.
 -        - mark entire list as incomplete.
 -        - list information.
@@ -33,7 +27,7 @@
 -        - open JSON file as List.
 -        - remove list.
 -        - duplicate List.
--- external Shared list view
+- external Shared list view
 -    - Clone to edit this list
 -        - cloned with description as "Based on <URL>"
 -    - source info

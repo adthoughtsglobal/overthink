@@ -303,7 +303,7 @@ textarea::placeholder {
         }
 
         &>.task_additional {
-            opacity: 0.5;
+            color: #ffffffab;
             overflow: hidden;
             transition: opacity .3s, transform .3s, height .3s;
             padding: 0 .3em;
@@ -520,9 +520,13 @@ input[type="text"] {
 .dropdown {
     position: relative;
 
-    &:hover .dropdown_content {
+    &.hoverable:hover .dropdown_content {
         display: flex;
     }
+}
+
+.dropdown.open .dropdown_content {
+    display: flex;
 }
 
 .dropdown_content {
@@ -961,7 +965,7 @@ span#saveStatus {
     opacity: 0.5;
 }
 
-.btngrp.group {
+.btngrp {
     gap: 0;
     overflow: hidden;
     border-radius: .5em;
@@ -969,6 +973,15 @@ span#saveStatus {
     &>.btn {
         border-radius: 0;
 
+    }
+
+    &.horiz {
+        display: flex;
+        flex-direction: row;
+        align-items: center;
+        padding: .5em;
+        gap: 5px;
+        overflow: visible;
     }
 }
 
@@ -1001,4 +1014,39 @@ span#saveStatus {
     aspect-ratio: 1 / 1;
     margin-right: .4em;
     transform: scale(1.3);
+}
+
+.btn.colorBob {
+    border-radius: .3em;
+    flex: 1;
+    width: 1em;
+    padding: 0;
+    position: relative;
+    aspect-ratio: 1 / 1;
+    outline: 1px solid transparent;
+        transition: .3s;
+
+    &>.tooltip {
+        opacity: 0;
+        position: absolute;
+        display: flex;
+        top: -2.8em;
+        width: 100px;
+        justify-content: center;
+        right: calc(-50px + .3em);
+        background: var(--col-bg2);
+        padding: .3em;
+        border-radius: .5em;
+        box-shadow: 0 5px 10px #00000029;
+        transition: .3s;
+    }
+
+    &:hover {
+        outline: 1px solid var(--col-bg3);
+        border-radius: 50%;
+
+        &>.tooltip {
+            opacity: .8;
+        }
+    }
 }
