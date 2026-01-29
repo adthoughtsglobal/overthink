@@ -842,3 +842,56 @@ const saveUI = {
         this.el.classList.remove("show");
     }
 };
+const buffer = 0.2
+const rootMargin = `${window.innerHeight * buffer}px 0px ${window.innerHeight * buffer}px 0px`
+const io = new IntersectionObserver(entries => {
+    for (const e of entries) {
+        const el = e.target
+        if (e.isIntersecting) {
+            if (!el.__mounted) {
+                // el.innerHTML = el.__html
+                el.style.visibility = "visible";
+                el.__mounted = true
+            }
+        } else {
+            if (el.__mounted) {
+                // el.__html = el.innerHTML
+                el.style.visibility = "hidden";
+                el.style.minHeight ||= `${el.getBoundingClientRect().height}px`
+                // el.innerHTML = ""
+                el.__mounted = false
+            }
+        }
+    }
+}, { rootMargin })
+
+const observe = el => {
+    if (!el.__init) {
+        el.__html = el.innerHTML
+        el.__mounted = true
+        el.__init = true
+    }
+    io.observe(el)
+}
+
+const scan = root => {
+    root.querySelectorAll(".ind_task").forEach(observe)
+}
+
+scan(document)
+
+const mo = new MutationObserver(muts => {
+    for (const m of muts) {
+        m.addedNodes.forEach(n => {
+            if (n.nodeType === 1) {
+                if (n.matches?.(".ind_task")) observe(n)
+                scan(n)
+            }
+        })
+        m.removedNodes.forEach(n => {
+            if (n.nodeType === 1 && n.matches?.(".ind_task")) io.unobserve(n)
+        })
+    }
+})
+
+mo.observe(document.body, { childList: true, subtree: true })
