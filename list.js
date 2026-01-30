@@ -95,7 +95,7 @@ class TaskTree {
     }
     update(taskid, key, value) {
         const t = this.index.get(taskid)
-        if (!t || !(key in t)) return false
+        if (!t) return false
 
         if (key === "status") {
             t.status = value
@@ -107,10 +107,8 @@ class TaskTree {
         t.updatedAt = Date.now()
         this.scheduleSnapshot()
         this._commit()
-        console.log("tree update", taskid, key, value)
         return true
     }
-
 
     getDerivedStatus(taskid) {
         const t = this.index.get(taskid)
@@ -258,10 +256,86 @@ function startOfToday() {
     d.setHours(0, 0, 0, 0)
     return d
 }
+const buffer = 0.2
+
+let io
+let pinnedId = null
+let rendering = false
+
+document.addEventListener("mousemove", e => {
+    pinnedId = e.target.closest?.(".ind_task")?.dataset.id || null
+})
+
+const createObserver = () => {
+    const rootMargin = `${innerHeight * buffer}px 0px ${innerHeight * buffer}px 0px`
+
+    io = new IntersectionObserver(entries => {
+        if (rendering) return
+
+        for (const e of entries) {
+            const el = e.target
+            if (el.dataset.id === pinnedId) {
+                el.style.visibility = "visible"
+                el.style.minHeight = ""
+                el.__mounted = true
+                continue
+            }
+
+            if (e.isIntersecting) {
+                el.style.visibility = "visible"
+                el.style.minHeight = ""
+                el.__mounted = true
+            } else if (el.__mounted) {
+                el.style.minHeight = el.offsetHeight + "px"
+                el.style.visibility = "hidden"
+                el.__mounted = false
+            }
+        }
+    }, { rootMargin })
+}
+
+createObserver()
+
+const observe = el => {
+    el.__observed = true
+    el.__mounted = true
+    el.style.visibility = "visible"
+    io.observe(el)
+}
+
+const scan = root => {
+    root.querySelectorAll(".ind_task").forEach(observe)
+}
+
+scan(document)
+
+const mo = new MutationObserver(muts => {
+    for (const m of muts) {
+        m.addedNodes.forEach(n => {
+            if (n.nodeType === 1) {
+                if (n.matches?.(".ind_task")) observe(n)
+                scan(n)
+            }
+        })
+        m.removedNodes.forEach(n => {
+            if (n.nodeType === 1 && n.matches?.(".ind_task")) io.unobserve(n)
+        })
+    }
+})
+
+mo.observe(document.body, { childList: true, subtree: true })
 
 let nodeCache = new Map()
 
 function renderTasks(tree, container) {
+    rendering = true
+
+    const anchor = pinnedId
+        ? container.querySelector(`.ind_task[data-id="${pinnedId}"]`)
+        : null
+
+    const anchorTop = anchor?.getBoundingClientRect().top
+
     const used = new Set()
     const roots = tree.getRoots()
 
@@ -271,11 +345,27 @@ function renderTasks(tree, container) {
 
     for (const [id, el] of nodeCache) {
         if (!used.has(id)) {
+            io.unobserve(el)
             el.remove()
             nodeCache.delete(id)
         }
     }
+
+    rendering = false
+
+    if (!anchor) return
+
+    anchor.style.visibility = "visible"
+    anchor.style.minHeight = ""
+    anchor.__mounted = true
+
+    requestAnimationFrame(() => {
+        const newTop = anchor.getBoundingClientRect().top
+        container.scrollTop += newTop - anchorTop
+    })
 }
+
+
 function renderTask(tree, task, container, depth, parentId, hidden, used) {
     let isDone = task.status === "done"
 
@@ -293,6 +383,7 @@ function renderTask(tree, task, container, depth, parentId, hidden, used) {
     if (!wrap) {
         wrap = createWrap(task, parentId, hidden)
         wrap._inner = createInner(depth, task)
+        wrap._strip = createColorStrip(task)
         wrap._expand = createExpand(tree, task, container)
         let dataRem = createData(tree, task);
         wrap._data = dataRem[0];
@@ -306,7 +397,7 @@ function renderTask(tree, task, container, depth, parentId, hidden, used) {
 
         attachDragHandlers(wrap._inner, tree, task, wrap._expand, container, dataRem[1].input)
 
-        wrap._inner.append(wrap._expand || "", wrap._data, wrap._toggle, wrap._btns)
+        wrap._inner.append(wrap._strip, wrap._expand || "", wrap._data, wrap._toggle, wrap._btns)
         wrap.append(wrap._inner)
         nodeCache.set(task.taskid, wrap)
     }
@@ -316,7 +407,7 @@ function renderTask(tree, task, container, depth, parentId, hidden, used) {
     wrap.dataset.parent = parentId || ""
 
     updateHierarchyLines(wrap, depth)
-    updateInnerLayout(wrap._inner, depth)
+    updateInnerLayout(wrap._inner, depth, task)
     const shouldHaveExpand = task.children?.length > 0
 
     if (shouldHaveExpand && !wrap._expand) {
@@ -330,6 +421,7 @@ function renderTask(tree, task, container, depth, parentId, hidden, used) {
     }
 
     updateExpandState(wrap._expand, task)
+    updateColorStrip(wrap._strip, task)
     updateData(wrap._data, tree, task)
     updateCompletionToggle(wrap._toggle, isDone)
     wrap._inner.classList.toggle("done", isDone)
@@ -372,6 +464,16 @@ function toggleChildren(container, parentId, hide) {
     }
 
     return !hide
+}
+function createColorStrip(task) {
+    const strip = document.createElement("div")
+    strip.className = "color_strip"
+    strip.style.backgroundColor = `${task.color || "var(--box-crisp-col)"}`;
+
+    return strip
+}
+function updateColorStrip(strip, task) {
+    strip.style.backgroundColor = `${task.color || "var(--box-crisp-col)"}`;
 }
 function createExpand(tree, task, container) {
     if (!task.children.length) return null
@@ -421,10 +523,9 @@ function updateHierarchyLines(wrap, depth) {
         l.style.left = (i * 4 - 0.8) + "em"
     })
 }
-function updateInnerLayout(inner, depth) {
-    inner.style.marginLeft = depth * 4 + "em"
+function updateInnerLayout(inner, depth, task) {
+    inner.style.marginLeft = depth * 4 + "em";
 }
-
 function updateExpandState(expand, task) {
     if (!expand) return
     expand.style.transform = task.collapsed ? "rotate(0deg)" : "rotate(90deg)"
@@ -482,8 +583,6 @@ function addHierarchyLines(wrap, depth) {
 function createInner(depth, task) {
     const inner = document.createElement("div")
     inner.className = "task_inner"
-    console.log(445, task)
-    inner.style.border = `1px solid ${task.color || "var(--box-crisp-col)"}`
     inner.draggable = true
 
     let currentStatus = task.status;
@@ -600,7 +699,7 @@ function createDeleteButton(tree, task, container) {
         blue: "#3b5f7a",
         green: "#3f6b52",
         yellow: "#7a6b3b",
-        purple: "#5e4a7a"
+        grey: "#1b1b1b"
     }
     const btn = document.createElement("div")
     btn.className = "del_task_btn task_btn dropdown"
@@ -626,9 +725,9 @@ function createDeleteButton(tree, task, container) {
         colorDiv.className = "btn colorBob"
         colorDiv.style.backgroundColor = value
         colorDiv.innerHTML = `<div class="tooltip">${name}</div>`;
-        colorDiv.onclick = e => {
+        colorDiv.onmouseup = e => {
             e.stopPropagation()
-            tree.update(task.taskid, "color", name)
+            tree.update(task.taskid, "color", value)
             renderTasks(tree, container)
         }
         btnGrp.appendChild(colorDiv)
@@ -842,56 +941,3 @@ const saveUI = {
         this.el.classList.remove("show");
     }
 };
-const buffer = 0.2
-const rootMargin = `${window.innerHeight * buffer}px 0px ${window.innerHeight * buffer}px 0px`
-const io = new IntersectionObserver(entries => {
-    for (const e of entries) {
-        const el = e.target
-        if (e.isIntersecting) {
-            if (!el.__mounted) {
-                // el.innerHTML = el.__html
-                el.style.visibility = "visible";
-                el.__mounted = true
-            }
-        } else {
-            if (el.__mounted) {
-                // el.__html = el.innerHTML
-                el.style.visibility = "hidden";
-                el.style.minHeight ||= `${el.getBoundingClientRect().height}px`
-                // el.innerHTML = ""
-                el.__mounted = false
-            }
-        }
-    }
-}, { rootMargin })
-
-const observe = el => {
-    if (!el.__init) {
-        el.__html = el.innerHTML
-        el.__mounted = true
-        el.__init = true
-    }
-    io.observe(el)
-}
-
-const scan = root => {
-    root.querySelectorAll(".ind_task").forEach(observe)
-}
-
-scan(document)
-
-const mo = new MutationObserver(muts => {
-    for (const m of muts) {
-        m.addedNodes.forEach(n => {
-            if (n.nodeType === 1) {
-                if (n.matches?.(".ind_task")) observe(n)
-                scan(n)
-            }
-        })
-        m.removedNodes.forEach(n => {
-            if (n.nodeType === 1 && n.matches?.(".ind_task")) io.unobserve(n)
-        })
-    }
-})
-
-mo.observe(document.body, { childList: true, subtree: true })
